@@ -164,8 +164,9 @@ public struct RunveyKit {
 
     var request = URLRequest(url: endpoint)
     request.httpMethod = "POST"
-    request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-    request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.setValue("2024-09-13", forHTTPHeaderField: "X-Runway-Version")
 
     if let seed = seed {
       guard (0...999999999).contains(seed) else {
@@ -309,8 +310,8 @@ public struct RunveyKit {
 
     var request = URLRequest(url: endpoint)
     request.httpMethod = "GET"
-    request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-    request.addValue("2024-09-13", forHTTPHeaderField: "X-Runway-Version")
+    request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+    request.setValue("2024-09-13", forHTTPHeaderField: "X-Runway-Version")
 
     logger.debug("Sending request to \(endpoint.absoluteString)")
     let (data, response) = try await URLSession.shared.data(for: request)
@@ -392,8 +393,8 @@ public struct RunveyKit {
 
     var request = URLRequest(url: endpoint)
     request.httpMethod = "DELETE"
-    request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-    request.addValue("2024-09-13", forHTTPHeaderField: "X-Runway-Version")
+    request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+    request.setValue("2024-09-13", forHTTPHeaderField: "X-Runway-Version")
 
     logger.debug("Sending DELETE request to \(endpoint.absoluteString)")
     let (_, response) = try await URLSession.shared.data(for: request)
