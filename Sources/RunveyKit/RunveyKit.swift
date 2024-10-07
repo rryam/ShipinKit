@@ -278,7 +278,7 @@ public struct RunveyKit {
   public static func getTaskDetails(id: String) async throws -> TaskResponse {
     let endpoint = baseURL.appendingPathComponent("tasks/\(id)")
 
-    var request = URLR`equest(url: endpoint)
+    var request = URLRequest(url: endpoint)
     request.httpMethod = "GET"
     request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
     request.addValue("2024-09-13", forHTTPHeaderField: "X-Runway-Version")
