@@ -1,3 +1,70 @@
 # RunveyKit: Unofficial Swift Library for RunwayML
 
-Unofficial Swift SDK to RunwayML REST API for quick prototyping
+RunveyKit is an unofficial Swift SDK for the RunwayML REST API, designed for quick prototyping and easy integration with RunwayML's image generation capabilities.
+
+## Features
+
+- Generate images using text prompts and input images
+- Customizable generation parameters (duration, aspect ratio, watermark, seed)
+- Swift async/await support
+- Error handling for common API issues
+
+## Requirements
+
+- Swift 6.0+
+- iOS 13.0+, macOS 13.0+, tvOS 13.0+, watchOS 8.0+, visionOS 1.0+
+
+## Installation
+
+Add RunveyKit to your Swift package dependencies:
+
+```swift
+dependencies: [
+.package(url: "https://github.com/yourusername/RunwayKit.git", from: "0.1.0")
+]
+```
+
+## Usage
+
+Here's a basic example of how to use RunveyKit to generate an image:
+
+````swift
+import RunwayKit
+
+```swift
+    do {
+        let prompt = "A futuristic cityscape with flying cars"
+        let imageURL = URL(string: "https://images.unsplash.com/photo-1542051841857-5f90071e7989?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")!
+
+        let taskID = try await RunwayML.generateImage(
+            prompt: prompt,
+            imageURL: imageURL,
+            duration: .long, // 10 seconds
+            aspectRatio: .widescreen, // 16:9 ratio
+            watermark: false,
+            seed: 42
+        )
+
+        print("Image generation task started with ID: \(taskID)")
+    } catch {
+        print("Error generating image: \(error)")
+    }
+```
+
+## Configuration
+
+Before using the library, make sure to set your RunwayML API key:
+
+```swift
+RunwayML.apiKey = "YOUR_API_KEY_HERE"
+```
+
+## License
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Contributing
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Disclaimer
+This is an unofficial library and is not affiliated with or endorsed by RunwayML.
+````
