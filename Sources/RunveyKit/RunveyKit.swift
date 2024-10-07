@@ -76,20 +76,20 @@ public enum VideoDuration: Int, Codable, Sendable {
   case long = 10
 }
 
-/// A struct that encapsulates the RunwayML API functionality
-public struct RunwayML {
+/// A struct that encapsulates the RunwayML REST API functionality
+public struct RunveyKit {
   // MARK: - Constants
 
   public static let apiKey = "YOUR_API_KEY_HERE"
   public static let baseURL = URL(string: "https://api.runwayml.com/v1")!
 
   /// Response model for image generation
-  public struct GenerateResponse: Codable {
+  public struct GenerateResponse: Codable, Sendable {
     let id: String
   }
 
   /// Response model for task details
-  public struct TaskResponse: Codable {
+  public struct TaskResponse: Codable, Sendable {
     public let id: String
     public let status: TaskStatus
     public let createdAt: Date
