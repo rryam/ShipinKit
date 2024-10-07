@@ -6,9 +6,9 @@ import PackageDescription
 let package = Package(
     name: "RunveyKit",
     platforms: [
-        .iOS(.v13),
-        .macOS(.v12),
-        .tvOS(.v13),
+        .iOS(.v14),
+        .macOS(.v13),
+        .tvOS(.v14),
         .watchOS(.v8),
         .visionOS(.v1)
     ],
