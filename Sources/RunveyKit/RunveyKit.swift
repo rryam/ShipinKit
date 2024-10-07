@@ -80,8 +80,12 @@ public enum VideoDuration: Int, Codable, Sendable {
 public struct RunveyKit {
   // MARK: - Constants
 
-  @TaskLocal public static var apiKey: String = "YOUR_API_KEY_HERE"
-  public static let baseURL = URL(string: "https://api.runwayml.com/v1")!
+  private let apiKey: String
+  private let baseURL = URL(string: "https://api.runwayml.com/v1")!
+
+  public init(apiKey: String) {
+    self.apiKey = apiKey
+  }
 
   /// Response model for image generation
   public struct GenerateResponse: Codable, Sendable {
@@ -127,10 +131,11 @@ public struct RunveyKit {
   ///   import RunveyKit
   ///
   ///   do {
+  ///       let runveyKit = RunveyKit(apiKey: "YOUR_API_KEY_HERE")
   ///       let prompt = "Dynamic tracking shot: The camera glides through the iconic Shibuya Crossing in Tokyo at night, capturing the bustling intersection bathed in vibrant neon lights. Countless pedestrians cross the wide intersection as towering digital billboards illuminate the scene with colorful advertisements. The wet pavement reflects the dazzling lights, creating a cinematic urban atmosphere."
   ///       let imageURL = URL(string: "https://images.unsplash.com/photo-1542051841857-5f90071e7989?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")!
   ///
-  ///       let taskID = try await RunwayML.generateImage(
+  ///       let taskID = try await runveyKit.generateImage(
   ///           prompt: prompt,
   ///           imageURL: imageURL,
   ///           duration: .long, // 10 seconds
@@ -144,7 +149,7 @@ public struct RunveyKit {
   ///       print("Error generating image: \(error)")
   ///   }
   ///   ```
-  public static func generateImage(
+  public func generateImage(
     prompt: String,
     imageURL: URL,
     duration: VideoDuration = .short,
@@ -224,7 +229,7 @@ public struct RunveyKit {
   ///
   /// - Returns: The ID of the newly created task.
   /// - Throws: RunwayMLError
-  public static func generateImage(
+  public func generateImage(
     prompt: String,
     image: RunwayImage,
     duration: VideoDuration = .short,
@@ -244,7 +249,7 @@ public struct RunveyKit {
   /// - Returns: A base64 string representation of the image
   ///
   /// - Throws: RunwayMLError if the image is too large
-  public static func imageToBase64String(_ image: RunwayImage) throws -> String {
+  public func imageToBase64String(_ image: RunwayImage) throws -> String {
     let imageData: Data
     #if os(macOS)
     guard let tiffRepresentation = image.tiffRepresentation,
@@ -275,7 +280,7 @@ public struct RunveyKit {
   /// - Parameter id: The ID of the task to retrieve
   /// - Returns: A TaskResponse object containing task details
   /// - Throws: RunwayMLError
-  public static func getTaskDetails(id: String) async throws -> TaskResponse {
+  public func getTaskDetails(id: String) async throws -> TaskResponse {
     let endpoint = baseURL.appendingPathComponent("tasks/\(id)")
 
     var request = URLRequest(url: endpoint)
@@ -320,7 +325,7 @@ public struct RunveyKit {
   ///
   /// - Parameter task: The TaskResponse object to process
   /// - Returns: A string describing the task status and details
-  public static func processTaskResponse(_ task: TaskResponse) -> String {
+  public func processTaskResponse(_ task: TaskResponse) -> String {
     switch task.status {
       case .pending:
         return "Task \(task.id) is pending. Created at: \(task.createdAt)"
@@ -343,7 +348,7 @@ public struct RunveyKit {
   ///
   /// - Parameter id: The ID of the task to cancel or delete
   /// - Throws: RunwayMLError
-  public static func cancelOrDeleteTask(id: String) async throws {
+  public func cancelOrDeleteTask(id: String) async throws {
     let endpoint = baseURL.appendingPathComponent("tasks/\(id)")
 
     var request = URLRequest(url: endpoint)
