@@ -80,7 +80,7 @@ public enum VideoDuration: Int, Codable, Sendable {
 public struct RunveyKit {
   // MARK: - Constants
 
-  public static let apiKey = "YOUR_API_KEY_HERE"
+  public static var apiKey = "YOUR_API_KEY_HERE"
   public static let baseURL = URL(string: "https://api.runwayml.com/v1")!
 
   /// Response model for image generation
