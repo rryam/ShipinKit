@@ -100,7 +100,7 @@ public struct RunveyKit {
   }
 
   /// Task status enum
-  public enum TaskStatus: String, Codable {
+  public enum TaskStatus: String, Codable, Sendable {
     case pending = "PENDING"
     case throttled = "THROTTLED"
     case running = "RUNNING"
