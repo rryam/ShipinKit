@@ -80,7 +80,7 @@ public enum VideoDuration: Int, Codable, Sendable {
 public struct RunveyKit {
   // MARK: - Constants
 
-  public static var apiKey = "YOUR_API_KEY_HERE"
+  @TaskLocal public static var apiKey: String = "YOUR_API_KEY_HERE"
   public static let baseURL = URL(string: "https://api.runwayml.com/v1")!
 
   /// Response model for image generation
@@ -278,7 +278,7 @@ public struct RunveyKit {
   public static func getTaskDetails(id: String) async throws -> TaskResponse {
     let endpoint = baseURL.appendingPathComponent("tasks/\(id)")
 
-    var request = URLRequest(url: endpoint)
+    var request = URLR`equest(url: endpoint)
     request.httpMethod = "GET"
     request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
     request.addValue("2024-09-13", forHTTPHeaderField: "X-Runway-Version")
