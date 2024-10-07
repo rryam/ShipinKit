@@ -1,6 +1,6 @@
 # RunveyKit: Unofficial Swift Library for RunwayML
 
-RunveyKit is an unofficial Swift SDK for the RunwayML REST API, designed for quick prototyping and easy integration with RunwayML's image generation capabilities.
+RunveyKit is an unofficial Swift SDK for the RunwayML REST API, designed for quick prototyping and easy integration with RunwayML's image generation capabilities. The name is based on the Hindi word for Runway, which is रनवे.
 
 ## Features
 
@@ -41,7 +41,7 @@ RunwayML.apiKey = "YOUR_API_KEY_HERE"
 Here is a basic example of how to use RunveyKit to generate an image:
 
 ```swift
-import RunwayKit
+import RunveyKit
 
     do {
         let prompt = "Dynamic tracking shot: The camera glides through the iconic Shibuya Crossing in Tokyo at night, capturing the bustling intersection bathed in vibrant neon lights. Countless pedestrians cross the wide intersection as towering digital billboards illuminate the scene with colorful advertisements. The wet pavement reflects the dazzling lights, creating a cinematic urban atmosphere."
@@ -65,7 +65,7 @@ import RunwayKit
 And here's an example of how to retrieve task details and process them into a human-readable description:
 
 ```swift
-import RunwayKit
+import RunveyKit
 
     do {
         let taskId = "17f20503-6c24-4c16-946b-35dbbce2af2f"
@@ -80,7 +80,7 @@ import RunwayKit
 And here's an example of how to cancel or delete a task:
 
 ```swift
-import RunwayKit
+import RunveyKit
 
     do {
         let taskId = "17f20503-6c24-4c16-946b-35dbbce2af2f"
