@@ -1,34 +1,36 @@
 import Foundation
+import UIKit
 
 // MARK: - RunwayML
 
 /// A struct that encapsulates the RunwayML API functionality
-struct RunwayML {
+public struct RunwayML {
     // MARK: - Constants
     
-    static let apiKey = "YOUR_API_KEY_HERE"
-    static let baseURL = URL(string: "https://api.runwayml.com/v1")!
+    public static let apiKey = "YOUR_API_KEY_HERE"
+    public static let baseURL = URL(string: "https://api.runwayml.com/v1")!
     
     // MARK: - Enums
     
     /// Custom error types for RunwayML operations
-    enum RunwayMLError: Error {
+    public enum RunwayMLError: Error {
         case invalidURL
         case requestFailed(Error)
         case invalidResponse
         case decodingFailed
         case rateLimitExceeded
         case invalidSeed
+        case imageTooLarge
     }
     
     /// Duration options for image generation
-    enum Duration: Int {
+    public enum Duration: Int {
         case short = 5
         case long = 10
     }
     
     /// Aspect ratio options for image generation
-    enum AspectRatio: String {
+    public enum AspectRatio: String {
         case widescreen = "16:9"
         case portrait = "9:16"
     }
@@ -36,12 +38,12 @@ struct RunwayML {
     // MARK: - Models
     
     /// Response model for image generation
-    struct GenerateResponse: Codable {
+    public struct GenerateResponse: Codable {
         let id: String
     }
     
     /// Response model for task details
-    struct TaskResponse: Codable {
+    public struct TaskResponse: Codable {
         let id: String
         let status: TaskStatus
         let createdAt: Date
@@ -52,7 +54,7 @@ struct RunwayML {
     }
 
     /// Task status enum
-    enum TaskStatus: String, Codable {
+    public enum TaskStatus: String, Codable {
         case pending = "PENDING"
         case throttled = "THROTTLED"
         case running = "RUNNING"
@@ -74,7 +76,7 @@ struct RunwayML {
     ///
     /// - Returns: The ID of the newly created task.
     /// - Throws: RunwayMLError
-    static func generateImage(
+    public static func generateImage(
         prompt: String,
         imageURL: URL,
         duration: Duration = .short,
@@ -132,12 +134,60 @@ struct RunwayML {
         }
     }
     
+    /// Generates an image using the RunwayML API from a UIImage
+    ///
+    /// - Parameters:
+    ///   - prompt: The text prompt for image generation
+    ///   - image: The UIImage to generate the image from
+    ///   - duration: The duration of the generation process (default: .short)
+    ///   - aspectRatio: The aspect ratio of the generated image (default: .widescreen)
+    ///   - watermark: Whether to include a watermark (default: false)
+    ///   - seed: An optional seed for randomization (default: nil, which lets the server generate a random seed)
+    ///
+    /// - Returns: The ID of the newly created task.
+    /// - Throws: RunwayMLError
+    public static func generateImage(
+        prompt: String,
+        image: UIImage,
+        duration: Duration = .short,
+        aspectRatio: AspectRatio = .widescreen,
+        watermark: Bool = false,
+        seed: Int? = nil
+    ) async throws -> String {
+        let base64String = try imageToBase64String(image)
+        let dataURI = "data:image/jpeg;base64," + base64String
+        let imageURL = URL(string: dataURI)!
+        return try await generateImage(prompt: prompt, imageURL: imageURL, duration: duration, aspectRatio: aspectRatio, watermark: watermark, seed: seed)
+    }
+    
+    /// Converts a UIImage to a base64 string for use in data URIs
+    ///
+    /// - Parameter image: The UIImage to convert
+    /// - Returns: A base64 string representation of the image
+    ///
+    /// - Throws: RunwayMLError if the image is too large
+    public static func imageToBase64String(_ image: UIImage) throws -> String {
+        guard let imageData = image.jpegData(compressionQuality: 1) else {
+            throw RunwayMLError.requestFailed(NSError(domain: "Image conversion failed", code: 0, userInfo: nil))
+        }
+        
+        let base64String = imageData.base64EncodedString()
+        
+        // Check if the base64 string is under the 3MB limit
+        let base64Data = Data(base64String)
+        if base64Data.count > 3 * 1024 * 1024 {
+            throw RunwayMLError.imageTooLarge
+        }
+        
+        return base64String
+    }
+    
     /// Gets details about a task
     ///
     /// - Parameter id: The ID of the task to retrieve
     /// - Returns: A TaskResponse object containing task details
     /// - Throws: RunwayMLError
-    static func getTaskDetails(id: String) async throws -> TaskResponse {
+    public static func getTaskDetails(id: String) async throws -> TaskResponse {
         let endpoint = baseURL.appendingPathComponent("tasks/\(id)")
         
         var request = URLRequest(url: endpoint)
@@ -172,7 +222,7 @@ struct RunwayML {
     ///
     /// - Parameter task: The TaskResponse object to process
     /// - Returns: A string describing the task status and details
-    static private func processTaskResponse(_ task: TaskResponse) -> String {
+    public static func processTaskResponse(_ task: TaskResponse) -> String {
         switch task.status {
         case .pending:
             return "Task \(task.id) is pending. Created at: \(task.createdAt)"
@@ -195,7 +245,7 @@ struct RunwayML {
     ///
     /// - Parameter id: The ID of the task to cancel or delete
     /// - Throws: RunwayMLError
-    static func cancelOrDeleteTask(id: String) async throws {
+    public static func cancelOrDeleteTask(id: String) async throws {
         let endpoint = baseURL.appendingPathComponent("tasks/\(id)")
         
         var request = URLRequest(url: endpoint)
