@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 #if canImport(UIKit)
 import UIKit
@@ -13,8 +14,6 @@ public typealias RunwayImage = UIImage
 #elseif os(macOS)
 public typealias RunwayImage = NSImage
 #endif
-
-
 
 // MARK: - RunwayML
 
@@ -82,9 +81,11 @@ public struct RunveyKit {
 
   private let apiKey: String
   private let baseURL = URL(string: "https://api.runwayml.com/v1")!
+  private let logger = Logger(subsystem: "com.runveykit", category: "API")
 
   public init(apiKey: String) {
     self.apiKey = apiKey
+    logger.info("RunveyKit initialized with API key: \(apiKey)")
   }
 
   /// Response model for image generation
@@ -157,6 +158,8 @@ public struct RunveyKit {
     watermark: Bool = false,
     seed: Int? = nil
   ) async throws -> String {
+    logger.info("Generating image with prompt: \(prompt), imageURL: \(imageURL.absoluteString), duration: \(duration.rawValue), aspectRatio: \(aspectRatio.rawValue), watermark: \(watermark), seed: \(seed ?? -1)")
+    
     let endpoint = baseURL.appendingPathComponent("generate")
 
     var request = URLRequest(url: endpoint)
@@ -166,6 +169,7 @@ public struct RunveyKit {
 
     if let seed = seed {
       guard (0...999999999).contains(seed) else {
+        logger.error("Invalid seed provided: \(seed)")
         throw RunwayMLError.invalidSeed
       }
     }
@@ -185,34 +189,47 @@ public struct RunveyKit {
 
     request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
+    logger.debug("Sending request to \(endpoint.absoluteString)")
     let (data, response) = try await URLSession.shared.data(for: request)
 
     guard let httpResponse = response as? HTTPURLResponse else {
+      logger.error("Invalid response received")
       throw RunwayMLError.invalidResponse
     }
+
+    logger.info("Received response with status code: \(httpResponse.statusCode)")
 
     switch httpResponse.statusCode {
       case 200:
         let decoder = JSONDecoder()
         do {
           let generateResponse = try decoder.decode(GenerateResponse.self, from: data)
+          logger.info("Successfully generated image with task ID: \(generateResponse.id)")
           return generateResponse.id
         } catch {
+          logger.error("Failed to decode response: \(error.localizedDescription)")
           throw RunwayMLError.decodingFailed
         }
       case 429:
+        logger.warning("Rate limit exceeded")
         throw RunwayMLError.rateLimitExceeded
       case 400:
+        logger.error("Bad request")
         throw RunwayMLError.badRequest
       case 401:
+        logger.error("Unauthorized access")
         throw RunwayMLError.unauthorized
       case 404:
+        logger.error("Resource not found")
         throw RunwayMLError.notFound
       case 405:
+        logger.error("Method not allowed")
         throw RunwayMLError.methodNotAllowed
       case 502, 503, 504:
+        logger.error("Service unavailable")
         throw RunwayMLError.serviceUnavailable
       default:
+        logger.error("Unexpected status code: \(httpResponse.statusCode)")
         throw RunwayMLError.invalidResponse
     }
   }
@@ -237,6 +254,7 @@ public struct RunveyKit {
     watermark: Bool = false,
     seed: Int? = nil
   ) async throws -> String {
+    logger.info("Generating image from RunwayImage")
     let base64String = try imageToBase64String(image)
     let dataURI = "data:image/jpeg;base64," + base64String
     let imageURL = URL(string: dataURI)!
@@ -250,16 +268,19 @@ public struct RunveyKit {
   ///
   /// - Throws: RunwayMLError if the image is too large
   public func imageToBase64String(_ image: RunwayImage) throws -> String {
+    logger.debug("Converting RunwayImage to base64 string")
     let imageData: Data
     #if os(macOS)
     guard let tiffRepresentation = image.tiffRepresentation,
           let bitmapImage = NSBitmapImageRep(data: tiffRepresentation),
           let jpegData = bitmapImage.representation(using: .jpeg, properties: [:]) else {
+      logger.error("Failed to convert NSImage to JPEG data")
       throw RunwayMLError.requestFailed(NSError(domain: "Image conversion failed", code: 0, userInfo: nil))
     }
     imageData = jpegData
     #else
     guard let jpegData = image.jpegData(compressionQuality: 1) else {
+      logger.error("Failed to convert UIImage to JPEG data")
       throw RunwayMLError.requestFailed(NSError(domain: "Image conversion failed", code: 0, userInfo: nil))
     }
     imageData = jpegData
@@ -270,8 +291,10 @@ public struct RunveyKit {
     // Check if the base64 string is under the 3MB limit
     let base64Data = Data(base64String.utf8)
     if base64Data.count > 3 * 1024 * 1024 {
+      logger.error("Image size exceeds 3MB limit: \(base64Data.count) bytes")
       throw RunwayMLError.imageTooLarge
     }
+    logger.debug("Successfully converted image to base64 string")
     return base64String
   }
 
@@ -281,6 +304,7 @@ public struct RunveyKit {
   /// - Returns: A TaskResponse object containing task details
   /// - Throws: RunwayMLError
   public func getTaskDetails(id: String) async throws -> TaskResponse {
+    logger.info("Getting task details for task ID: \(id)")
     let endpoint = baseURL.appendingPathComponent("tasks/\(id)")
 
     var request = URLRequest(url: endpoint)
@@ -288,11 +312,15 @@ public struct RunveyKit {
     request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
     request.addValue("2024-09-13", forHTTPHeaderField: "X-Runway-Version")
 
+    logger.debug("Sending request to \(endpoint.absoluteString)")
     let (data, response) = try await URLSession.shared.data(for: request)
 
     guard let httpResponse = response as? HTTPURLResponse else {
+      logger.error("Invalid response received")
       throw RunwayMLError.invalidResponse
     }
+
+    logger.info("Received response with status code: \(httpResponse.statusCode)")
 
     switch httpResponse.statusCode {
       case 200:
@@ -300,23 +328,32 @@ public struct RunveyKit {
         decoder.dateDecodingStrategy = .iso8601
         do {
           let taskResponse = try decoder.decode(TaskResponse.self, from: data)
+          logger.info("Successfully retrieved task details for task ID: \(taskResponse.id)")
           return taskResponse
         } catch {
+          logger.error("Failed to decode task response: \(error.localizedDescription)")
           throw RunwayMLError.decodingFailed
         }
       case 429:
+        logger.warning("Rate limit exceeded")
         throw RunwayMLError.rateLimitExceeded
       case 400:
+        logger.error("Bad request")
         throw RunwayMLError.badRequest
       case 401:
+        logger.error("Unauthorized access")
         throw RunwayMLError.unauthorized
       case 404:
+        logger.error("Resource not found")
         throw RunwayMLError.notFound
       case 405:
+        logger.error("Method not allowed")
         throw RunwayMLError.methodNotAllowed
       case 502, 503, 504:
+        logger.error("Service unavailable")
         throw RunwayMLError.serviceUnavailable
       default:
+        logger.error("Unexpected status code: \(httpResponse.statusCode)")
         throw RunwayMLError.invalidResponse
     }
   }
@@ -326,6 +363,7 @@ public struct RunveyKit {
   /// - Parameter task: The TaskResponse object to process
   /// - Returns: A string describing the task status and details
   public func processTaskResponse(_ task: TaskResponse) -> String {
+    logger.info("Processing task response for task ID: \(task.id)")
     switch task.status {
       case .pending:
         return "Task \(task.id) is pending. Created at: \(task.createdAt)"
@@ -349,6 +387,7 @@ public struct RunveyKit {
   /// - Parameter id: The ID of the task to cancel or delete
   /// - Throws: RunwayMLError
   public func cancelOrDeleteTask(id: String) async throws {
+    logger.info("Cancelling or deleting task with ID: \(id)")
     let endpoint = baseURL.appendingPathComponent("tasks/\(id)")
 
     var request = URLRequest(url: endpoint)
@@ -356,28 +395,40 @@ public struct RunveyKit {
     request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
     request.addValue("2024-09-13", forHTTPHeaderField: "X-Runway-Version")
 
+    logger.debug("Sending DELETE request to \(endpoint.absoluteString)")
     let (_, response) = try await URLSession.shared.data(for: request)
 
     guard let httpResponse = response as? HTTPURLResponse else {
+      logger.error("Invalid response received")
       throw RunwayMLError.invalidResponse
     }
 
+    logger.info("Received response with status code: \(httpResponse.statusCode)")
+
     switch httpResponse.statusCode {
       case 204:
+        logger.info("Task successfully canceled or deleted")
         return // Task successfully canceled or deleted
       case 429:
+        logger.warning("Rate limit exceeded")
         throw RunwayMLError.rateLimitExceeded
       case 400:
+        logger.error("Bad request")
         throw RunwayMLError.badRequest
       case 401:
+        logger.error("Unauthorized access")
         throw RunwayMLError.unauthorized
       case 404:
+        logger.error("Resource not found")
         throw RunwayMLError.notFound
       case 405:
+        logger.error("Method not allowed")
         throw RunwayMLError.methodNotAllowed
       case 502, 503, 504:
+        logger.error("Service unavailable")
         throw RunwayMLError.serviceUnavailable
       default:
+        logger.error("Unexpected status code: \(httpResponse.statusCode)")
         throw RunwayMLError.invalidResponse
     }
   }
