@@ -13,7 +13,7 @@ final class RunveyKitTests: XCTestCase {
 
   override func setUp() {
     super.setUp()
-    runveyKit = RunveyKit(apiKey: "key_5e195bcad07329a1f7cce6d64b5f02f85788eadf781732b8e4656cbb2f933edbc8754678d586c8d88dbfc20710fb68d274fd3a627f58ac51ada174d000c14c2c")
+    runveyKit = RunveyKit(apiKey: "KEY_HERE")
   }
 
   func testRunveyKitInitialization() {
