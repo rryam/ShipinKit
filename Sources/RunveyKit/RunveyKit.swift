@@ -66,8 +66,8 @@ public enum RunwayMLError: Error {
 }
 
 public enum AspectRatio: String, Codable, Sendable {
-  case widescreen = "WIDESCREEN"
-  case square = "SQUARE"
+  case widescreen = "16:9"
+  case portrait = "9:16"
 }
 
 public enum VideoDuration: Int, Codable, Sendable {
@@ -158,7 +158,7 @@ public struct RunveyKit {
     watermark: Bool = false,
     seed: Int? = nil
   ) async throws -> String {
-    logger.info("Generating image with prompt: \(prompt), imageURL: \(imageURL.absoluteString), duration: \(duration.rawValue), aspectRatio: \(aspectRatio.rawValue), watermark: \(watermark), seed: \(seed ?? -1)")
+    logger.info("Generating image with prompt: \(prompt), imageURL: \(imageURL.absoluteString), duration: \(duration.rawValue), aspectRatio: \(aspectRatio.rawValue), watermark: \(watermark)")
     
     let endpoint = baseURL.appendingPathComponent("image_to_video")
 
