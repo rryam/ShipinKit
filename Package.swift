@@ -23,6 +23,10 @@ let package = Package(
     targets: [
         .target(
             name: "RunveyKit",
-            dependencies: [])
+            dependencies: []),
+        .testTarget(
+            name: "RunveyKitTests",
+            dependencies: ["RunveyKit"]
+        )
     ]
 )

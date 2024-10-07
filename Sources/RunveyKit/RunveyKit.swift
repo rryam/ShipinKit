@@ -97,7 +97,7 @@ public struct RunveyKit {
   public struct TaskResponse: Codable, Sendable {
     public let id: String
     public let status: TaskStatus
-    public let createdAt: Date
+    public let createdAt: String
     public let progress: Double?
     public let output: [String]?
     public let failure: String?
@@ -325,10 +325,8 @@ public struct RunveyKit {
 
     switch httpResponse.statusCode {
       case 200:
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
         do {
-          let taskResponse = try decoder.decode(TaskResponse.self, from: data)
+          let taskResponse = try JSONDecoder().decode(TaskResponse.self, from: data)
           logger.info("Successfully retrieved task details for task ID: \(taskResponse.id)")
           return taskResponse
         } catch {
