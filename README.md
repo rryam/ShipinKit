@@ -1,2 +1,3 @@
-# RunveyKit
-Unofficial Swift SDK for Runway ML APIs for quick prototyping
+# RunveyKit: Unofficial Swift Library for RunwayML
+
+Unofficial Swift SDK to RunwayML REST API for quick prototyping
