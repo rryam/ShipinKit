@@ -66,12 +66,12 @@ public enum RunwayMLError: Error {
   }
 }
 
-public enum AspectRatio: String, Codable {
+public enum AspectRatio: String, Codable, Sendable {
   case widescreen = "WIDESCREEN"
   case square = "SQUARE"
 }
 
-public enum VideoDuration: Int, Codable {
+public enum VideoDuration: Int, Codable, Sendable {
   case short = 5
   case long = 10
 }
@@ -90,13 +90,13 @@ public struct RunwayML {
 
   /// Response model for task details
   public struct TaskResponse: Codable {
-    let id: String
-    let status: TaskStatus
-    let createdAt: Date
-    let progress: Double?
-    let output: [String]?
-    let failure: String?
-    let failureCode: String?
+    public let id: String
+    public let status: TaskStatus
+    public let createdAt: Date
+    public let progress: Double?
+    public let output: [String]?
+    public let failure: String?
+    public let failureCode: String?
   }
 
   /// Task status enum
