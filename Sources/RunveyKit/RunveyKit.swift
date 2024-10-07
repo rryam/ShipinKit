@@ -80,7 +80,7 @@ public struct RunveyKit {
   // MARK: - Constants
 
   private let apiKey: String
-  private let baseURL = URL(string: "https://api.runwayml.com/v1")!
+  private let baseURL = URL(string: "https://api.dev.runwayml.com/v1")!
   private let logger = Logger(subsystem: "com.runveykit", category: "API")
 
   public init(apiKey: String) {
@@ -160,7 +160,7 @@ public struct RunveyKit {
   ) async throws -> String {
     logger.info("Generating image with prompt: \(prompt), imageURL: \(imageURL.absoluteString), duration: \(duration.rawValue), aspectRatio: \(aspectRatio.rawValue), watermark: \(watermark), seed: \(seed ?? -1)")
     
-    let endpoint = baseURL.appendingPathComponent("generate")
+    let endpoint = baseURL.appendingPathComponent("image_to_video")
 
     var request = URLRequest(url: endpoint)
     request.httpMethod = "POST"
