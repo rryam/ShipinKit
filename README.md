@@ -38,11 +38,11 @@ RunwayML.apiKey = "YOUR_API_KEY_HERE"
 
 Here is a basic example of how to use RunveyKit to generate an image:
 
-````swift
+```swift
 import RunwayKit
 
     do {
-        let prompt = "A futuristic cityscape with flying cars"
+        let prompt = "Dynamic tracking shot: The camera glides through the iconic Shibuya Crossing in Tokyo at night, capturing the bustling intersection bathed in vibrant neon lights. Countless pedestrians cross the wide intersection as towering digital billboards illuminate the scene with colorful advertisements. The wet pavement reflects the dazzling lights, creating a cinematic urban atmosphere."
         let imageURL = URL(string: "https://images.unsplash.com/photo-1542051841857-5f90071e7989?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")!
 
         let taskID = try await RunwayML.generateImage(
@@ -61,11 +61,13 @@ import RunwayKit
 ```
 
 ## License
+
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## Contributing
+
 Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Disclaimer
+
 This is an unofficial library and is not affiliated with or endorsed by RunwayML.
-````
