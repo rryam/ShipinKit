@@ -1,0 +1,22 @@
+{
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:RunveyKit}",
+      "name": "Debug RunveyKit",
+      "program": "${workspaceFolder:RunveyKit}/.build/debug/RunveyKit",
+      "preLaunchTask": "swift: Build Debug RunveyKit"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:RunveyKit}",
+      "name": "Release RunveyKit",
+      "program": "${workspaceFolder:RunveyKit}/.build/release/RunveyKit",
+      "preLaunchTask": "swift: Build Release RunveyKit"
+    }
+  ]
+}
