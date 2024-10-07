@@ -17,6 +17,24 @@
       "name": "Release RunveyKit",
       "program": "${workspaceFolder:RunveyKit}/.build/release/RunveyKit",
       "preLaunchTask": "swift: Build Release RunveyKit"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:RunveyKit}",
+      "name": "Debug RunwayMLExample",
+      "program": "${workspaceFolder:RunveyKit}/.build/debug/RunwayMLExample",
+      "preLaunchTask": "swift: Build Debug RunwayMLExample"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:RunveyKit}",
+      "name": "Release RunwayMLExample",
+      "program": "${workspaceFolder:RunveyKit}/.build/release/RunwayMLExample",
+      "preLaunchTask": "swift: Build Release RunwayMLExample"
     }
   ]
 }
