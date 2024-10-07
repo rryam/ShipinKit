@@ -1,5 +1,20 @@
 import Foundation
+
+#if canImport(UIKit)
 import UIKit
+#endif
+
+#if canImport(AppKit)
+import AppKit
+#endif
+
+#if os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
+public typealias RunwayImage = UIImage
+#elseif os(macOS)
+public typealias RunwayImage = NSImage
+#endif
+
+
 
 // MARK: - RunwayML
 
@@ -51,13 +66,11 @@ public enum RunwayMLError: Error {
   }
 }
 
-/// Aspect ratio enum
 public enum AspectRatio: String, Codable {
   case widescreen = "WIDESCREEN"
   case square = "SQUARE"
 }
 
-/// Aspect ratio enum
 public enum VideoDuration: Int, Codable {
   case short = 5
   case long = 10
@@ -96,7 +109,6 @@ public struct RunwayML {
   }
 
   // MARK: - API Methods
-
   /// Generates an image using the RunwayML API
   ///
   /// - Parameters:
@@ -109,6 +121,29 @@ public struct RunwayML {
   ///
   /// - Returns: The ID of the newly created task.
   /// - Throws: RunwayMLError
+  ///
+  /// - Example:
+  ///   ```swift
+  ///   import RunveyKit
+  ///
+  ///   do {
+  ///       let prompt = "Dynamic tracking shot: The camera glides through the iconic Shibuya Crossing in Tokyo at night, capturing the bustling intersection bathed in vibrant neon lights. Countless pedestrians cross the wide intersection as towering digital billboards illuminate the scene with colorful advertisements. The wet pavement reflects the dazzling lights, creating a cinematic urban atmosphere."
+  ///       let imageURL = URL(string: "https://images.unsplash.com/photo-1542051841857-5f90071e7989?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")!
+  ///
+  ///       let taskID = try await RunwayML.generateImage(
+  ///           prompt: prompt,
+  ///           imageURL: imageURL,
+  ///           duration: .long, // 10 seconds
+  ///           aspectRatio: .widescreen, // 16:9 ratio
+  ///           watermark: false,
+  ///           seed: 42
+  ///       )
+  ///
+  ///       print("Image generation task started with ID: \(taskID)")
+  ///   } catch {
+  ///       print("Error generating image: \(error)")
+  ///   }
+  ///   ```
   public static func generateImage(
     prompt: String,
     imageURL: URL,
@@ -191,7 +226,7 @@ public struct RunwayML {
   /// - Throws: RunwayMLError
   public static func generateImage(
     prompt: String,
-    image: UIImage,
+    image: RunwayImage,
     duration: VideoDuration = .short,
     aspectRatio: AspectRatio = .widescreen,
     watermark: Bool = false,
@@ -209,10 +244,22 @@ public struct RunwayML {
   /// - Returns: A base64 string representation of the image
   ///
   /// - Throws: RunwayMLError if the image is too large
-  public static func imageToBase64String(_ image: UIImage) throws -> String {
-    guard let imageData = image.jpegData(compressionQuality: 1) else {
+  public static func imageToBase64String(_ image: RunwayImage) throws -> String {
+    let imageData: Data
+    #if os(macOS)
+    guard let tiffRepresentation = image.tiffRepresentation,
+          let bitmapImage = NSBitmapImageRep(data: tiffRepresentation),
+          let jpegData = bitmapImage.representation(using: .jpeg, properties: [:]) else {
       throw RunwayMLError.requestFailed(NSError(domain: "Image conversion failed", code: 0, userInfo: nil))
     }
+    imageData = jpegData
+    #else
+    guard let jpegData = image.jpegData(compressionQuality: 1) else {
+      throw RunwayMLError.requestFailed(NSError(domain: "Image conversion failed", code: 0, userInfo: nil))
+    }
+    imageData = jpegData
+    #endif
+
     let base64String = imageData.base64EncodedString()
 
     // Check if the base64 string is under the 3MB limit

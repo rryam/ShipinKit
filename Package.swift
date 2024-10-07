@@ -7,18 +7,22 @@ let package = Package(
     name: "RunveyKit",
     platforms: [
         .iOS(.v13),
-        .macOS(.v13),
+        .macOS(.v12),
         .tvOS(.v13),
         .watchOS(.v8),
         .visionOS(.v1)
     ],
     products: [
-        .executable(
+        .library(
             name: "RunveyKit",
             targets: ["RunveyKit"])
     ],
+    dependencies: [
+        .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0")
+    ],
     targets: [
-        .executableTarget(
-            name: "RunveyKit")
+        .target(
+            name: "RunveyKit",
+            dependencies: [])
     ]
 )
