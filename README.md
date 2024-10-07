@@ -20,18 +20,27 @@ Add RunveyKit to your Swift package dependencies:
 
 ```swift
 dependencies: [
-.package(url: "https://github.com/yourusername/RunwayKit.git", from: "0.1.0")
+    .package(url: "https://github.com/rryam/RunveyKit.git", from: "0.1.0")
 ]
 ```
 
+## Configuration
+
+Before using the library, make sure to set your RunwayML API key:
+
+```swift
+RunwayML.apiKey = "YOUR_API_KEY_HERE"
+```
+
+**Important Note:** This library is intended for quick prototyping and development purposes only. For production use, it is highly recommended to implement a more secure and controlled approach to managing API keys, such as using environment variables or a secure key management service.
+
 ## Usage
 
-Here's a basic example of how to use RunveyKit to generate an image:
+Here is a basic example of how to use RunveyKit to generate an image:
 
 ````swift
 import RunwayKit
 
-```swift
     do {
         let prompt = "A futuristic cityscape with flying cars"
         let imageURL = URL(string: "https://images.unsplash.com/photo-1542051841857-5f90071e7989?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")!
@@ -49,14 +58,6 @@ import RunwayKit
     } catch {
         print("Error generating image: \(error)")
     }
-```
-
-## Configuration
-
-Before using the library, make sure to set your RunwayML API key:
-
-```swift
-RunwayML.apiKey = "YOUR_API_KEY_HERE"
 ```
 
 ## License
