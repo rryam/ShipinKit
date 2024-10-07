@@ -8,6 +8,8 @@ RunveyKit is an unofficial Swift SDK for the RunwayML REST API, designed for qui
 - Customizable generation parameters (duration, aspect ratio, watermark, seed)
 - Swift async/await support
 - Error handling for common API issues
+- Retrieve task details and process them into a human-readable description
+- Cancel or delete a task
 
 ## Requirements
 
@@ -57,6 +59,35 @@ import RunwayKit
         print("Image generation task started with ID: \(taskID)")
     } catch {
         print("Error generating image: \(error)")
+    }
+```
+
+And here's an example of how to retrieve task details and process them into a human-readable description:
+
+```swift
+import RunwayKit
+
+    do {
+        let taskId = "17f20503-6c24-4c16-946b-35dbbce2af2f"
+        let taskDetails = try await RunwayML.getTaskDetails(id: taskId)
+        let description = RunwayML.processTaskResponse(taskDetails)
+        print(description)
+    } catch {
+        print("Error: \(error)")
+    }
+```
+
+And here's an example of how to cancel or delete a task:
+
+```swift
+import RunwayKit
+
+    do {
+        let taskId = "17f20503-6c24-4c16-946b-35dbbce2af2f"
+        try await RunwayML.cancelOrDeleteTask(id: taskId)
+        print("Task \(taskId) has been successfully canceled or deleted.")
+    } catch {
+        print("Error canceling or deleting task: \(error)")
     }
 ```
 
