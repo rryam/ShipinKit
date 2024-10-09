@@ -34,7 +34,7 @@ This library is intended for quick prototyping and development purposes only. Fo
 
 Here are examples of how to use RunveyKit to generate videos:
 
-`````swift
+```swift
 // Generate video from image data
 let runvey = RunveyKit(apiKey: "your-api-key")
 let image = UIImage(named: "input-image.jpg")!
@@ -69,7 +69,7 @@ do {
 
 Here is a basic example of how to use RunveyKit to generate a task if you prefer manual control:
 
-````swift
+```swift
 import RunveyKit
 
 do {
@@ -88,7 +88,7 @@ do {
 } catch {
     print("Error generating image: \(error)")
 }
-`````
+```
 
 Here's an example of how to retrieve task details and process them into a human-readable description:
 
