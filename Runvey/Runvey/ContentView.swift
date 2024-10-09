@@ -177,6 +177,9 @@ struct ContentView: View {
       }
     }
   }
+
+  func cancelTask(id: String) async throws {
+  }
 }
 
 #Preview {

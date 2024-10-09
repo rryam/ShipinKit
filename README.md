@@ -4,7 +4,7 @@ RunveyKit is an unofficial Swift SDK for the RunwayML REST API, designed for qui
 
 ## Features
 
-- Generate images using text prompts and input images
+- Generate videos using text prompts and input images
 - Customizable generation parameters (duration, aspect ratio, watermark, seed)
 - Swift async/await support
 - Error handling for common API issues
@@ -14,7 +14,7 @@ RunveyKit is an unofficial Swift SDK for the RunwayML REST API, designed for qui
 ## Requirements
 
 - Swift 6.0+
-- iOS 14.0+, macOS 13.0+, tvOS 14.0+, watchOS 8.0+, visionOS 1.0+
+- iOS 16.0+, macOS 14.0+, tvOS 16.0+, watchOS 9.0+, visionOS 1.0+
 
 ## Installation
 
@@ -22,7 +22,7 @@ Add RunveyKit to your Swift package dependencies:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/rryam/RunveyKit.git", from: "0.1.0")
+    .package(url: "https://github.com/rryam/RunveyKit.git", from: "1.0.0")
 ]
 ```
 
@@ -32,10 +32,44 @@ This library is intended for quick prototyping and development purposes only. Fo
 
 ## Usage
 
-Here is a basic example of how to use RunveyKit to generate an image:
+Here are examples of how to use RunveyKit to generate videos:
+
+`````swift
+// Generate video from image data
+let runvey = RunveyKit(apiKey: "your-api-key")
+let image = UIImage(named: "input-image.jpg")!
+do {
+    let videoURL = try await runvey.generateVideo(
+        prompt: "A serene lake with mountains in the background",
+        image: image,
+        duration: .medium,
+        aspectRatio: .square
+    )
+    print("Video generated successfully: \(videoURL)")
+} catch {
+    print("Error generating video: \(error)")
+}
+
+// Generate video from image URL
+let runvey = RunveyKit(apiKey: "your-api-key")
+let imageURL = URL(string: "https://example.com/input-image.jpg")!
+do {
+    let videoURL = try await runvey.generateVideo(
+        prompt: "A bustling cityscape transforming through seasons",
+        imageURL: imageURL,
+        duration: .long,
+        aspectRatio: .vertical,
+        watermark: true
+    )
+    print("Video generated successfully: \(videoURL)")
+} catch {
+    print("Error generating video: \(error)")
+}
+```
+
+Here is a basic example of how to use RunveyKit to generate a task if you prefer manual control:
 
 ````swift
-// Start of Selection
 import RunveyKit
 
 do {
@@ -43,7 +77,7 @@ do {
     let imageURL = URL(string: "https://images.unsplash.com/photo-1542051841857-5f90071e7989?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")!
 
     let runveyKit = RunveyKit(apiKey: "YOUR_API_KEY_HERE")
-    let taskID = try await runveyKit.generateImage(
+    let taskID = try await runveyKit.generateTask(
         prompt: prompt,
         imageURL: imageURL,
         duration: .long, // 10 seconds
@@ -54,8 +88,9 @@ do {
 } catch {
     print("Error generating image: \(error)")
 }
+`````
 
-And here's an example of how to retrieve task details and process them into a human-readable description:
+Here's an example of how to retrieve task details and process them into a human-readable description:
 
 ```swift
 import RunveyKit
@@ -68,7 +103,7 @@ import RunveyKit
     } catch {
         print("Error: \(error)")
     }
-````
+```
 
 And here's an example of how to cancel or delete a task:
 

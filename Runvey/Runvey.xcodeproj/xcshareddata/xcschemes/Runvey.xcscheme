@@ -53,7 +53,7 @@
       <EnvironmentVariables>
          <EnvironmentVariable
             key = "RUNWAYML_API_KEY"
-            value = "key_5e195bcad07329a1f7cce6d64b5f02f85788eadf781732b8e4656cbb2f933edbc8754678d586c8d88dbfc20710fb68d274fd3a627f58ac51ada174d000c14c2c"
+            value = "key_d831f72458b285d4086f1c454d5161f2ca5fea2a4ffaeebce0c8ed86d91937b7427c2006b88b24784f7679d39b2100176557c06f1c363cad740e3d7d4c3e5df7"
             isEnabled = "YES">
          </EnvironmentVariable>
       </EnvironmentVariables>
