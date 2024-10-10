@@ -1,54 +1,80 @@
 #!/bin/bash
+set -euo pipefail
 
-set -e
+# Enable debug output
+set -x
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd -P)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+# Define paths
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd -P)"
+PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
+PROJECT_BUILD_DIR="${PROJECT_ROOT}/build"
+SCHEME="RunveyKit"
 
-PROJECT_BUILD_DIR="${PROJECT_BUILD_DIR:-"${PROJECT_ROOT}/build"}"
-XCODEBUILD_BUILD_DIR="$PROJECT_BUILD_DIR/xcodebuild"
-XCODEBUILD_DERIVED_DATA_PATH="$XCODEBUILD_BUILD_DIR/DerivedData"
-
+# Function to build framework
 build_framework() {
     local sdk="$1"
     local destination="$2"
-    local scheme="$3"
-
-    local XCODEBUILD_ARCHIVE_PATH="./$scheme-$sdk.xcarchive"
-
-    rm -rf "$XCODEBUILD_ARCHIVE_PATH"
-
+    local archive_path="${PROJECT_BUILD_DIR}/${SCHEME}-${sdk}.xcarchive"
+    
+    echo "Building for ${sdk}..."
+    mkdir -p "${PROJECT_BUILD_DIR}"
+    
+    # Clean previous archive if exists
+    rm -rf "${archive_path}"
+    
     xcodebuild archive \
-        -scheme "$scheme" \
-        -archivePath "$XCODEBUILD_ARCHIVE_PATH" \
-        -derivedDataPath "$XCODEBUILD_DERIVED_DATA_PATH" \
-        -sdk "$sdk" \
-        -destination "$destination" \
+        -scheme "${SCHEME}" \
+        -archivePath "${archive_path}" \
+        -sdk "${sdk}" \
+        -destination "${destination}" \
         BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
-        INSTALL_PATH='Library/Frameworks' \
-        OTHER_SWIFT_FLAGS=-no-verify-emitted-module-interface \
-        LD_GENERATE_MAP_FILE=YES
-
-    FRAMEWORK_MODULES_PATH="$XCODEBUILD_ARCHIVE_PATH/Products/Library/Frameworks/$scheme.framework/Modules"
-    mkdir -p "$FRAMEWORK_MODULES_PATH"
-    cp -r \
-    "$XCODEBUILD_DERIVED_DATA_PATH/Build/Intermediates.noindex/ArchiveIntermediates/$scheme/BuildProductsPath/Release-$sdk/$scheme.swiftmodule" \
-    "$FRAMEWORK_MODULES_PATH/$scheme.swiftmodule"
-    rm -f "$FRAMEWORK_MODULES_PATH/$scheme.swiftmodule/*.private.swiftinterface"
-    mkdir -p "$scheme-$sdk.xcarchive/LinkMaps"
-    find "$XCODEBUILD_DERIVED_DATA_PATH" -name "$scheme-LinkMap-*.txt" -exec cp {} "./$scheme-$sdk.xcarchive/LinkMaps/" \;
+        SKIP_INSTALL=NO \
+        BUILD_DIR="${PROJECT_BUILD_DIR}/build" \
+        OBJROOT="${PROJECT_BUILD_DIR}/build" \
+        SYMROOT="${PROJECT_BUILD_DIR}/build" \
+        | xcpretty && exit ${PIPESTATUS[0]}
+    
+    # Verify archive was created
+    if [ ! -d "${archive_path}" ]; then
+        echo "Error: Archive not created at ${archive_path}"
+        exit 1
+    fi
+    
+    # Verify framework exists in archive
+    if [ ! -d "${archive_path}/Products/Library/Frameworks/${SCHEME}.framework" ]; then
+        echo "Error: Framework not found in archive at ${archive_path}/Products/Library/Frameworks/${SCHEME}.framework"
+        ls -la "${archive_path}/Products/Library/Frameworks"
+        exit 1
+    }
 }
 
-# Update the Package.swift to build the library as dynamic instead of static
-sed -i '' 's/type: \.static/type: .dynamic/g' Package.swift
+main() {
+    # Update Package.swift if it exists
+    if [ -f "Package.swift" ]; then
+        echo "Updating Package.swift..."
+        sed -i '' 's/type: \.static/type: .dynamic/g' Package.swift
+    fi
+    
+    # Build for different architectures
+    build_framework "iphoneos" "generic/platform=iOS"
+    build_framework "iphonesimulator" "generic/platform=iOS Simulator"
+    
+    # Create XCFramework
+    echo "Creating XCFramework..."
+    rm -rf "${SCHEME}.xcframework"
+    
+    xcodebuild -create-xcframework \
+        -framework "${PROJECT_BUILD_DIR}/${SCHEME}-iphonesimulator.xcarchive/Products/Library/Frameworks/${SCHEME}.framework" \
+        -framework "${PROJECT_BUILD_DIR}/${SCHEME}-iphoneos.xcarchive/Products/Library/Frameworks/${SCHEME}.framework" \
+        -output "${SCHEME}.xcframework"
+    
+    # Verify XCFramework was created
+    if [ ! -d "${SCHEME}.xcframework" ]; then
+        echo "Error: XCFramework not created"
+        exit 1
+    fi
+    
+    echo "Build completed successfully."
+}
 
-build_framework "iphoneos" "generic/platform=iOS" "RunveyKit"
-build_framework "iphonesimulator" "generic/platform=iOS Simulator" "RunveyKit"
-
-echo "Build completed successfully."
-
-rm -rf "RunveyKit.xcframework"
-xcodebuild -create-xcframework -framework RunveyKit-iphonesimulator.xcarchive/Products/Library/Frameworks/RunveyKit.framework -framework RunveyKit-iphoneos.xcarchive/Products/Library/Frameworks/RunveyKit.framework -output RunveyKit.xcframework
-
-cp -r RunveyKit-iphoneos.xcarchive/dSYMs RunveyKit.xcframework/ios-arm64
-cp -r RunveyKit-iphonesimulator.xcarchive/dSYMs RunveyKit.xcframework/ios-arm64_x86_64-simulator
+main "$@"
