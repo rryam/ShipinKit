@@ -10,6 +10,10 @@ PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 PROJECT_BUILD_DIR="${PROJECT_ROOT}/build"
 SCHEME="RunveyKit"
 
+echo "Current directory: $(pwd)"
+echo "Swift version:"
+swift --version
+
 # Function to build framework
 build_framework() {
     local sdk="$1"
@@ -22,6 +26,7 @@ build_framework() {
     # Clean previous archive if exists
     rm -rf "${archive_path}"
     
+    echo "Running xcodebuild..."
     xcodebuild archive \
         -scheme "${SCHEME}" \
         -archivePath "${archive_path}" \
@@ -32,7 +37,11 @@ build_framework() {
         BUILD_DIR="${PROJECT_BUILD_DIR}/build" \
         OBJROOT="${PROJECT_BUILD_DIR}/build" \
         SYMROOT="${PROJECT_BUILD_DIR}/build" \
-        | xcpretty && exit ${PIPESTATUS[0]}
+        | tee "${PROJECT_BUILD_DIR}/xcodebuild-${sdk}.log" | xcpretty || {
+            echo "xcodebuild failed. Full log:"
+            cat "${PROJECT_BUILD_DIR}/xcodebuild-${sdk}.log"
+            exit 1
+        }
     
     # Verify archive was created
     if [ ! -d "${archive_path}" ]; then
@@ -42,19 +51,13 @@ build_framework() {
     
     # Verify framework exists in archive
     if [ ! -d "${archive_path}/Products/Library/Frameworks/${SCHEME}.framework" ]; then
-        echo "Error: Framework not found in archive at ${archive_path}/Products/Library/Frameworks/${SCHEME}.framework"
-        ls -la "${archive_path}/Products/Library/Frameworks"
+        echo "Error: Framework not found in archive"
+        ls -la "${archive_path}/Products/Library/Frameworks" || true
         exit 1
-    fi  # Fixed: Removed extra closing brace here
+    fi
 }
 
 main() {
-    # Update Package.swift if it exists
-    if [ -f "Package.swift" ]; then
-        echo "Updating Package.swift..."
-        sed -i '' 's/type: \.static/type: .dynamic/g' Package.swift
-    fi
-    
     # Build for different architectures
     build_framework "iphoneos" "generic/platform=iOS"
     build_framework "iphonesimulator" "generic/platform=iOS Simulator"
