@@ -9,6 +9,13 @@ PROJECT_BUILD_DIR="${PROJECT_BUILD_DIR:-"${PROJECT_ROOT}/build"}"
 XCODEBUILD_BUILD_DIR="$PROJECT_BUILD_DIR/xcodebuild"
 XCODEBUILD_DERIVED_DATA_PATH="$XCODEBUILD_BUILD_DIR/DerivedData"
 
+PACKAGE_NAME=$1
+if [ -z "$PACKAGE_NAME" ]; then
+    echo "No package name provided. Using the first scheme found in the Package.swift."
+    PACKAGE_NAME=$(xcodebuild -list | awk 'schemes && NF>0 { print $1; exit } /Schemes:$/ { schemes = 1 }')
+    echo "Using: $PACKAGE_NAME"
+fi
+
 build_framework() {
     local sdk="$1"
     local destination="$2"
@@ -26,8 +33,7 @@ build_framework() {
         -destination "$destination" \
         BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
         INSTALL_PATH='Library/Frameworks' \
-        OTHER_SWIFT_FLAGS=-no-verify-emitted-module-interface \
-        LD_GENERATE_MAP_FILE=YES
+        OTHER_SWIFT_FLAGS=-no-verify-emitted-module-interface
 
     FRAMEWORK_MODULES_PATH="$XCODEBUILD_ARCHIVE_PATH/Products/Library/Frameworks/$scheme.framework/Modules"
     mkdir -p "$FRAMEWORK_MODULES_PATH"
@@ -36,20 +42,17 @@ build_framework() {
     "$FRAMEWORK_MODULES_PATH/$scheme.swiftmodule"
     # Delete private swiftinterface
     rm -f "$FRAMEWORK_MODULES_PATH/$scheme.swiftmodule/*.private.swiftinterface"
-    mkdir -p "$scheme-$sdk.xcarchive/LinkMaps"
-    find "$XCODEBUILD_DERIVED_DATA_PATH" -name "$scheme-LinkMap-*.txt" -exec cp {} "./$scheme-$sdk.xcarchive/LinkMaps/" \;
 }
 
-# Update the Package.swift to build the library as dynamic instead of static
 sed -i '' '/Replace this/ s/.*/type: .dynamic,/' Package.swift
 
-build_framework "iphonesimulator" "generic/platform=iOS Simulator" "RunveyKit"
-build_framework "iphoneos" "generic/platform=iOS" "RunveyKit"
+build_framework "iphonesimulator" "generic/platform=iOS Simulator" "$PACKAGE_NAME"
+build_framework "iphoneos" "generic/platform=iOS" "$PACKAGE_NAME"
 
 echo "Builds completed successfully."
 
-rm -rf "RunveyKit.xcframework"
-xcodebuild -create-xcframework -framework RunveyKit-iphonesimulator.xcarchive/Products/Library/Frameworks/RunveyKit.framework -framework RunveyKit-iphoneos.xcarchive/Products/Library/Frameworks/RunveyKit.framework -output RunveyKit.xcframework
+rm -rf "$PACKAGE_NAME.xcframework"
+xcodebuild -create-xcframework -framework $PACKAGE_NAME-iphonesimulator.xcarchive/Products/Library/Frameworks/$PACKAGE_NAME.framework -framework $PACKAGE_NAME-iphoneos.xcarchive/Products/Library/Frameworks/$PACKAGE_NAME.framework -output $PACKAGE_NAME.xcframework
 
-cp -r RunveyKit-iphonesimulator.xcarchive/dSYMs RunveyKit.xcframework/ios-arm64_x86_64-simulator
-cp -r RunveyKit-iphoneos.xcarchive/dSYMs RunveyKit.xcframework/ios-arm64
+cp -r $PACKAGE_NAME-iphonesimulator.xcarchive/dSYMs $PACKAGE_NAME.xcframework/ios-arm64_x86_64-simulator
+cp -r $PACKAGE_NAME-iphoneos.xcarchive/dSYMs $PACKAGE_NAME.xcframework/ios-arm64
