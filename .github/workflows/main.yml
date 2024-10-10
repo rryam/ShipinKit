@@ -16,7 +16,7 @@ jobs:
             - name: Build
               run: ./.github/build.sh
             - name: Create RunveyKit XCFramework
-            - run: zip -r ./RunveyKit.xcframework.zip ./RunveyKit.xcframework
+              run: zip -r ./RunveyKit.xcframework.zip ./RunveyKit.xcframework
             - name: Upload artifact to Emerge
               uses: EmergeTools/emerge-upload-action@v1.1.0
               with:
