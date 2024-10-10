@@ -45,7 +45,7 @@ build_framework() {
         echo "Error: Framework not found in archive at ${archive_path}/Products/Library/Frameworks/${SCHEME}.framework"
         ls -la "${archive_path}/Products/Library/Frameworks"
         exit 1
-    }
+    fi  # Fixed: Removed extra closing brace here
 }
 
 main() {
