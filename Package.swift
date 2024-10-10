@@ -15,6 +15,7 @@ let package = Package(
     products: [
         .library(
             name: "RunveyKit",
+            type: .static,
             targets: ["RunveyKit"])
     ],
     dependencies: [
