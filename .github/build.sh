@@ -1,8 +1,7 @@
-is there any redundancy here? 
-
 #!/bin/bash
 
 set -e
+set -x  # Add debug output to help troubleshoot CI issues
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd -P)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -10,6 +9,12 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 PROJECT_BUILD_DIR="${PROJECT_BUILD_DIR:-"${PROJECT_ROOT}/build"}"
 XCODEBUILD_BUILD_DIR="$PROJECT_BUILD_DIR/xcodebuild"
 XCODEBUILD_DERIVED_DATA_PATH="$XCODEBUILD_BUILD_DIR/DerivedData"
+
+# Ensure build directories exist and have correct permissions
+mkdir -p "$PROJECT_BUILD_DIR"
+mkdir -p "$XCODEBUILD_BUILD_DIR"
+mkdir -p "$XCODEBUILD_DERIVED_DATA_PATH"
+chmod -R 755 "$PROJECT_BUILD_DIR"
 
 PACKAGE_NAME=$1
 if [ -z "$PACKAGE_NAME" ]; then
@@ -23,30 +28,42 @@ build_framework() {
     local destination="$2"
     local scheme="$3"
 
-    local XCODEBUILD_ARCHIVE_PATH="./$scheme-$sdk.xcarchive"
+    local XCODEBUILD_ARCHIVE_PATH="$PROJECT_BUILD_DIR/$scheme-$sdk.xcarchive"
 
     rm -rf "$XCODEBUILD_ARCHIVE_PATH"
 
     xcodebuild archive \
         -scheme $scheme \
-        -archivePath $XCODEBUILD_ARCHIVE_PATH \
+        -archivePath "$XCODEBUILD_ARCHIVE_PATH" \
         -derivedDataPath "$XCODEBUILD_DERIVED_DATA_PATH" \
         -sdk "$sdk" \
         -destination "$destination" \
         BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
         INSTALL_PATH='Library/Frameworks' \
-        OTHER_SWIFT_FLAGS=-no-verify-emitted-module-interface \
-        LD_GENERATE_MAP_FILE=YES
+        OTHER_SWIFT_FLAGS=-no-verify-emitted-module-interface
+
+    # Check if archive was created successfully
+    if [ ! -d "$XCODEBUILD_ARCHIVE_PATH" ]; then
+        echo "Error: Archive was not created at $XCODEBUILD_ARCHIVE_PATH"
+        exit 1
+    fi
 
     FRAMEWORK_MODULES_PATH="$XCODEBUILD_ARCHIVE_PATH/Products/Library/Frameworks/$scheme.framework/Modules"
     mkdir -p "$FRAMEWORK_MODULES_PATH"
-    cp -r \
-    "$XCODEBUILD_DERIVED_DATA_PATH/Build/Intermediates.noindex/ArchiveIntermediates/$scheme/BuildProductsPath/Release-$sdk/$scheme.swiftmodule" \
-    "$FRAMEWORK_MODULES_PATH/$scheme.swiftmodule"
+    
+    SWIFT_MODULE_SOURCE="$XCODEBUILD_DERIVED_DATA_PATH/Build/Intermediates.noindex/ArchiveIntermediates/$scheme/BuildProductsPath/Release-$sdk/$scheme.swiftmodule"
+    if [ ! -d "$SWIFT_MODULE_SOURCE" ]; then
+        echo "Error: Swift module not found at $SWIFT_MODULE_SOURCE"
+        exit 1
+    }
+    
+    cp -r "$SWIFT_MODULE_SOURCE" "$FRAMEWORK_MODULES_PATH/$scheme.swiftmodule"
+    
     # Delete private swiftinterface
-    rm -f "$FRAMEWORK_MODULES_PATH/$scheme.swiftmodule/*.private.swiftinterface"
-    mkdir -p "$scheme-$sdk.xcarchive/LinkMaps"
-    find "$XCODEBUILD_DERIVED_DATA_PATH" -name "$scheme-LinkMap-*.txt" -exec cp {} "./$scheme-$sdk.xcarchive/LinkMaps/" \;
+    find "$FRAMEWORK_MODULES_PATH/$scheme.swiftmodule" -name "*.private.swiftinterface" -delete
+    
+    # Ensure correct permissions
+    chmod -R 755 "$XCODEBUILD_ARCHIVE_PATH"
 }
 
 sed -i '' '/Replace this/ s/.*/type: .dynamic,/' Package.swift
@@ -56,8 +73,20 @@ build_framework "iphoneos" "generic/platform=iOS" "$PACKAGE_NAME"
 
 echo "Builds completed successfully."
 
-rm -rf "$PACKAGE_NAME.xcframework"
-xcodebuild -create-xcframework -framework $PACKAGE_NAME-iphonesimulator.xcarchive/Products/Library/Frameworks/$PACKAGE_NAME.framework -framework $PACKAGE_NAME-iphoneos.xcarchive/Products/Library/Frameworks/$PACKAGE_NAME.framework -output $PACKAGE_NAME.xcframework
+XCFRAMEWORK_PATH="$PROJECT_BUILD_DIR/$PACKAGE_NAME.xcframework"
+rm -rf "$XCFRAMEWORK_PATH"
 
-cp -r $PACKAGE_NAME-iphonesimulator.xcarchive/dSYMs $PACKAGE_NAME.xcframework/ios-arm64_x86_64-simulator
-cp -r $PACKAGE_NAME-iphoneos.xcarchive/dSYMs $PACKAGE_NAME.xcframework/ios-arm64
+# Use full paths for xcframework creation
+xcodebuild -create-xcframework \
+    -framework "$PROJECT_BUILD_DIR/$PACKAGE_NAME-iphonesimulator.xcarchive/Products/Library/Frameworks/$PACKAGE_NAME.framework" \
+    -framework "$PROJECT_BUILD_DIR/$PACKAGE_NAME-iphoneos.xcarchive/Products/Library/Frameworks/$PACKAGE_NAME.framework" \
+    -output "$XCFRAMEWORK_PATH"
+
+# Copy dSYMs with full paths
+mkdir -p "$XCFRAMEWORK_PATH/ios-arm64_x86_64-simulator"
+mkdir -p "$XCFRAMEWORK_PATH/ios-arm64"
+cp -r "$PROJECT_BUILD_DIR/$PACKAGE_NAME-iphonesimulator.xcarchive/dSYMs" "$XCFRAMEWORK_PATH/ios-arm64_x86_64-simulator"
+cp -r "$PROJECT_BUILD_DIR/$PACKAGE_NAME-iphoneos.xcarchive/dSYMs" "$XCFRAMEWORK_PATH/ios-arm64"
+
+# Ensure correct permissions for the final xcframework
+chmod -R 755 "$XCFRAMEWORK_PATH"
