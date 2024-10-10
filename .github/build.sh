@@ -39,6 +39,7 @@ build_framework() {
         -sdk "$sdk" \
         -destination "$destination" \
         BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
+        SKIP_INSTALL=NO \
         INSTALL_PATH='Library/Frameworks' \
         OTHER_SWIFT_FLAGS=-no-verify-emitted-module-interface
 
