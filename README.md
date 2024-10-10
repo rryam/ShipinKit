@@ -2,6 +2,8 @@
 
 RunveyKit is an unofficial Swift SDK for the RunwayML REST API, designed for quick prototyping and easy integration with RunwayML's image generation capabilities. The name is based on the Hindi word for Runway, which is रनवे.
 
+<a href="https://www.emergetools.com/app/example/ios/runveykit.RunveyKit/manual?utm_campaign=badge-data"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fwww.emergetools.com%2Fapi%2Fv2%2Fpublic_new_build%3FexampleId%3Drunveykit.RunveyKit%26platform%3Dios%26badgeOption%3Dversion_and_max_install_size%26buildType%3Dmanual&query=$.badgeMetadata&label=RunveyKit&logo=apple" /></a>
+
 ## Features
 
 - Generate videos using text prompts and input images
