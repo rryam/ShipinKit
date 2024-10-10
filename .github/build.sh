@@ -67,7 +67,7 @@ build_framework() {
     chmod -R 755 "$XCODEBUILD_ARCHIVE_PATH"
 }
 
-sed -i '' '/Replace this/ s/.*/type: .dynamic,/' Package.swift
+sed -i '' 's/type: \.static/type: .dynamic/g' Package.swift
 
 build_framework "iphonesimulator" "generic/platform=iOS Simulator" "$PACKAGE_NAME"
 build_framework "iphoneos" "generic/platform=iOS" "$PACKAGE_NAME"
