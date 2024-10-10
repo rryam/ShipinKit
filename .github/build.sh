@@ -55,7 +55,7 @@ build_framework() {
     if [ ! -d "$SWIFT_MODULE_SOURCE" ]; then
         echo "Error: Swift module not found at $SWIFT_MODULE_SOURCE"
         exit 1
-    }
+    fi
     
     cp -r "$SWIFT_MODULE_SOURCE" "$FRAMEWORK_MODULES_PATH/$scheme.swiftmodule"
     
