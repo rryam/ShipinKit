@@ -12,7 +12,7 @@ jobs:
               with:
                   xcode-version: latest-stable
             - name: Make Build executable
-              run: chmod +x build.sh
+              run: chmod +x ./.github/build.sh
             - name: Build
               run: ./.github/build.sh
             - name: Create RunveyKit XCFramework
