@@ -11,8 +11,11 @@ jobs:
             - uses: maxim-lobanov/setup-xcode@v1
               with:
                   xcode-version: latest-stable
+            - name: Make Build executable
+              run: chmod +x script.sh
             - name: Build
               run: ./.github/build.sh
+            - name: Create RunveyKit XCFramework
             - run: zip -r ./RunveyKit.xcframework.zip ./RunveyKit.xcframework
             - name: Upload artifact to Emerge
               uses: EmergeTools/emerge-upload-action@v1.1.0
