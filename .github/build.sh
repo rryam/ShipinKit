@@ -89,5 +89,8 @@ mkdir -p "$XCFRAMEWORK_PATH/ios-arm64"
 cp -r "$PROJECT_BUILD_DIR/$PACKAGE_NAME-iphonesimulator.xcarchive/dSYMs" "$XCFRAMEWORK_PATH/ios-arm64_x86_64-simulator"
 cp -r "$PROJECT_BUILD_DIR/$PACKAGE_NAME-iphoneos.xcarchive/dSYMs" "$XCFRAMEWORK_PATH/ios-arm64"
 
+# Zip the xcframework
+zip -r "$PROJECT_BUILD_DIR/$PACKAGE_NAME.xcframework.zip" "$XCFRAMEWORK_PATH"
+
 # Ensure correct permissions for the final xcframework
 chmod -R 755 "$XCFRAMEWORK_PATH"
