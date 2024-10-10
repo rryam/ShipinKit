@@ -1,25 +1,56 @@
 name: Build
 on:
-    push:
-        branches: [main]
+  push:
+    branches: [main]
+
 jobs:
-    build:
-        name: Swift 6.0
-        runs-on: macos-latest
-        steps:
-            - uses: actions/checkout@v4
-            - uses: maxim-lobanov/setup-xcode@v1
-              with:
-                  xcode-version: latest-stable
-            - name: Make Build executable
-              run: chmod +x ./.github/build.sh
-            - name: Build
-              run: ./.github/build.sh
-            - name: Create RunveyKit XCFramework
-              run: zip -r ./RunveyKit.xcframework.zip ./RunveyKit.xcframework
-            - name: Upload artifact to Emerge
-              uses: EmergeTools/emerge-upload-action@v1.1.0
-              with:
-                  build_type: release
-                  artifact_path: ./RunveyKit.xcframework.zip
-                  emerge_api_key: ${{ secrets.EMERGE_API_KEY }}
+  build:
+    name: Build XCFramework
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      
+      - name: List Xcode details
+        run: |
+          xcodebuild -version
+          swift --version
+          
+      - name: List project structure
+        run: |
+          ls -la
+          xcodebuild -list
+      
+      - name: Make Build script executable
+        run: chmod +x ./.github/build.sh
+      
+      - name: Build XCFramework
+        run: |
+          ./.github/build.sh
+        env:
+          DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+          
+      - name: Verify XCFramework
+        run: |
+          ls -la ./RunveyKit.xcframework
+          xcrun xcframework info ./RunveyKit.xcframework
+      
+      - name: Create zip archive
+        run: zip -r ./RunveyKit.xcframework.zip ./RunveyKit.xcframework
+      
+      - name: Upload artifact to Emerge
+        uses: EmergeTools/emerge-upload-action@v1.1.0
+        with:
+          build_type: release
+          artifact_path: ./RunveyKit.xcframework.zip
+          emerge_api_key: ${{ secrets.EMERGE_API_KEY }}
+      
+      - name: Upload artifact to GitHub
+        uses: actions/upload-artifact@v3
+        with:
+          name: RunveyKit.xcframework
+          path: ./RunveyKit.xcframework.zip
