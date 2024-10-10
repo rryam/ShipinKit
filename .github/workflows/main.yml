@@ -17,8 +17,6 @@ jobs:
       - name: Build XCFramework
         run: |
           sh ./.github/build.sh $PACKAGE_NAME
-      - name: Create Zip
-        run: zip -r ./${{ env.PACKAGE_NAME }}.xcframework.zip ./${{ env.PACKAGE_NAME }}.xcframework
       - name: Upload artifact to Emerge
         uses: EmergeTools/emerge-upload-action@v1.1.0
         with:
