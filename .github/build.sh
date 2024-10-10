@@ -1,8 +1,15 @@
+is there any redundancy here? 
+
 #!/bin/bash
 
 set -e
 
-XCODEBUILD_DERIVED_DATA_PATH="./DerivedData"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd -P)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+PROJECT_BUILD_DIR="${PROJECT_BUILD_DIR:-"${PROJECT_ROOT}/build"}"
+XCODEBUILD_BUILD_DIR="$PROJECT_BUILD_DIR/xcodebuild"
+XCODEBUILD_DERIVED_DATA_PATH="$XCODEBUILD_BUILD_DIR/DerivedData"
 
 PACKAGE_NAME=$1
 if [ -z "$PACKAGE_NAME" ]; then
@@ -21,16 +28,27 @@ build_framework() {
     rm -rf "$XCODEBUILD_ARCHIVE_PATH"
 
     xcodebuild archive \
-        -scheme "$scheme" \
-        -archivePath "$XCODEBUILD_ARCHIVE_PATH" \
+        -scheme $scheme \
+        -archivePath $XCODEBUILD_ARCHIVE_PATH \
+        -derivedDataPath "$XCODEBUILD_DERIVED_DATA_PATH" \
         -sdk "$sdk" \
         -destination "$destination" \
         BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
         INSTALL_PATH='Library/Frameworks' \
-        OTHER_SWIFT_FLAGS='-no-verify-emitted-module-interface'
+        OTHER_SWIFT_FLAGS=-no-verify-emitted-module-interface \
+        LD_GENERATE_MAP_FILE=YES
+
+    FRAMEWORK_MODULES_PATH="$XCODEBUILD_ARCHIVE_PATH/Products/Library/Frameworks/$scheme.framework/Modules"
+    mkdir -p "$FRAMEWORK_MODULES_PATH"
+    cp -r \
+    "$XCODEBUILD_DERIVED_DATA_PATH/Build/Intermediates.noindex/ArchiveIntermediates/$scheme/BuildProductsPath/Release-$sdk/$scheme.swiftmodule" \
+    "$FRAMEWORK_MODULES_PATH/$scheme.swiftmodule"
+    # Delete private swiftinterface
+    rm -f "$FRAMEWORK_MODULES_PATH/$scheme.swiftmodule/*.private.swiftinterface"
+    mkdir -p "$scheme-$sdk.xcarchive/LinkMaps"
+    find "$XCODEBUILD_DERIVED_DATA_PATH" -name "$scheme-LinkMap-*.txt" -exec cp {} "./$scheme-$sdk.xcarchive/LinkMaps/" \;
 }
 
-# Remove the sed command if Package.swift is already correctly configured
 sed -i '' '/Replace this/ s/.*/type: .dynamic,/' Package.swift
 
 build_framework "iphonesimulator" "generic/platform=iOS Simulator" "$PACKAGE_NAME"
@@ -39,10 +57,7 @@ build_framework "iphoneos" "generic/platform=iOS" "$PACKAGE_NAME"
 echo "Builds completed successfully."
 
 rm -rf "$PACKAGE_NAME.xcframework"
-xcodebuild -create-xcframework \
-    -framework "$PACKAGE_NAME-iphonesimulator.xcarchive/Products/Library/Frameworks/$PACKAGE_NAME.framework" \
-    -framework "$PACKAGE_NAME-iphoneos.xcarchive/Products/Library/Frameworks/$PACKAGE_NAME.framework" \
-    -output "$PACKAGE_NAME.xcframework"
+xcodebuild -create-xcframework -framework $PACKAGE_NAME-iphonesimulator.xcarchive/Products/Library/Frameworks/$PACKAGE_NAME.framework -framework $PACKAGE_NAME-iphoneos.xcarchive/Products/Library/Frameworks/$PACKAGE_NAME.framework -output $PACKAGE_NAME.xcframework
 
-cp -r "$PACKAGE_NAME-iphonesimulator.xcarchive/dSYMs" "$PACKAGE_NAME.xcframework/ios-arm64_x86_64-simulator"
-cp -r "$PACKAGE_NAME-iphoneos.xcarchive/dSYMs" "$PACKAGE_NAME.xcframework/ios-arm64"
+cp -r $PACKAGE_NAME-iphonesimulator.xcarchive/dSYMs $PACKAGE_NAME.xcframework/ios-arm64_x86_64-simulator
+cp -r $PACKAGE_NAME-iphoneos.xcarchive/dSYMs $PACKAGE_NAME.xcframework/ios-arm64
