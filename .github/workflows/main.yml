@@ -30,9 +30,7 @@ jobs:
       
       - name: Build XCFramework
         run: |
-          ./.github/build.sh
-        env:
-          DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+          sh ./.github/build.sh RunveyKit
           
       - name: Verify XCFramework
         run: |
