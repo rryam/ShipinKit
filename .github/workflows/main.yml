@@ -15,11 +15,10 @@ jobs:
         with:
           xcode-version: latest-stable
       - name: Build XCFramework
-        run: |
-          sh ./.github/build.sh $PACKAGE_NAME
+        run: sh ./.github/build.sh $PACKAGE_NAME
       - name: Upload artifact to Emerge
         uses: EmergeTools/emerge-upload-action@v1.1.0
         with:
           build_type: release
-          artifact_path: ./${{ env.PACKAGE_NAME }}.xcframework.zip
+          artifact_path: ./build/${{ env.PACKAGE_NAME }}.xcframework.zip
           emerge_api_key: ${{ secrets.EMERGE_API_KEY }}
