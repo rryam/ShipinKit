@@ -45,7 +45,7 @@ do {
         prompt: "A serene lake with mountains in the background",
         image: image,
         duration: .medium,
-        aspectRatio: .square
+        aspectRatio: .widescreen
     )
     print("Video generated successfully: \(videoURL)")
 } catch {
@@ -60,7 +60,7 @@ do {
         prompt: "A bustling cityscape transforming through seasons",
         imageURL: imageURL,
         duration: .long,
-        aspectRatio: .vertical,
+        aspectRatio: .portrait,
         watermark: true
     )
     print("Video generated successfully: \(videoURL)")
