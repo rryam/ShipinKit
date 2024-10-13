@@ -15,9 +15,9 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		0AC98B822CB3B21700C9CA79 /* Runvey */ = {
+		0AC98B822CB3B21700C9CA79 /* Shipin */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Runvey;
+			path = Shipin;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -37,7 +37,7 @@
 		0AC98B772CB3B21700C9CA79 = {
 			isa = PBXGroup;
 			children = (
-				0AC98B822CB3B21700C9CA79 /* Runvey */,
+				0AC98B822CB3B21700C9CA79 /* Shipin */,
 				0AC98B812CB3B21700C9CA79 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -66,7 +66,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				0AC98B822CB3B21700C9CA79 /* Runvey */,
+				0AC98B822CB3B21700C9CA79 /* Shipin */,
 			);
 			name = Shipin;
 			packageProductDependencies = (
@@ -262,7 +262,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"Runvey/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"Shipin/Preview Content\"";
 				DEVELOPMENT_TEAM = YQZQG7N4WG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -293,7 +293,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"Runvey/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"Shipin/Preview Content\"";
 				DEVELOPMENT_TEAM = YQZQG7N4WG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
