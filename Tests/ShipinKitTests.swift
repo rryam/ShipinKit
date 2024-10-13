@@ -1,23 +1,23 @@
 //
-//  RunveyKitTests.swift
-//  RunveyKit
+//  ShipinKitTests.swift
+//  ShipinKit
 //
 //  Created by Rudrank Riyam on 10/7/24.
 //
 
 import XCTest
-@testable import RunveyKit
+@testable import ShipinKit
 
-final class RunveyKitTests: XCTestCase {
-  var runveyKit: RunveyKit!
+final class ShipinKitTests: XCTestCase {
+  var shipinKit: ShipinKit!
 
   override func setUp() {
     super.setUp()
-    runveyKit = RunveyKit(apiKey: "KEY_HERE")
+    shipinKit = ShipinKit(apiKey: "KEY_HERE")
   }
 
-  func testRunveyKitInitialization() {
-    XCTAssertNotNil(runveyKit)
+  func testShipinKitInitialization() {
+    XCTAssertNotNil(shipinKit)
   }
 
   func testGenerateImage() async throws {
@@ -25,7 +25,7 @@ final class RunveyKitTests: XCTestCase {
     let imageURL = URL(string: "https://images.unsplash.com/photo-1501560379-05951a742668?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")!
 
     do {
-      let taskID = try await runveyKit.generateTask(prompt: prompt, imageURL: imageURL)
+      let taskID = try await shipinKit.generateTask(prompt: prompt, imageURL: imageURL)
       debugPrint(taskID)
       XCTAssertFalse(taskID.isEmpty)
     } catch {
@@ -37,7 +37,7 @@ final class RunveyKitTests: XCTestCase {
     let taskID = "299d8c18-30aa-47a0-b0d4-7e9ed72db017"
 
     do {
-      let taskDetails = try await runveyKit.getTaskDetails(id: taskID)
+      let taskDetails = try await shipinKit.getTaskDetails(id: taskID)
       debugPrint(taskDetails)
       XCTAssertEqual(taskDetails.id, taskID)
     } catch {
@@ -49,7 +49,7 @@ final class RunveyKitTests: XCTestCase {
     let taskID = "test_task_id"
 
     do {
-      try await runveyKit.cancelOrDeleteTask(id: taskID)
+      try await shipinKit.cancelOrDeleteTask(id: taskID)
       // If we reach here, the test passes
     } catch {
       XCTFail("Cancel or delete task failed with error: \(error)")

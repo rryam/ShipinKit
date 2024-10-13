@@ -1,6 +1,6 @@
 //
 //  ContentView.swift
-//  Runvey
+//  Shipin
 //
 //  Created by Rudrank Riyam on 10/7/24.
 //
@@ -8,7 +8,7 @@
 import SwiftUI
 import AVKit
 import PhotosUI
-import RunveyKit
+import ShipinKit
 
 struct ContentView: View {
     @State private var selectedImage: UIImage?
@@ -85,7 +85,7 @@ struct ContentView: View {
                 }
             }
             .padding()
-            .navigationTitle("RunveyKit Example")
+            .navigationTitle("ShipinKit Example")
         }
     }
 
@@ -107,14 +107,14 @@ struct ContentView: View {
                 return
             }
 
-            let runveyKit = RunveyKit(apiKey: apiKey)
+            let shipinKit = ShipinKit(apiKey: apiKey)
             let videoURL: URL
 
             if let selectedImage = selectedImage {
-                videoURL = try await runveyKit.generateVideo(prompt: promptText, image: selectedImage, duration: .long, aspectRatio: .widescreen)
+                videoURL = try await shipinKit.generateVideo(prompt: promptText, image: selectedImage, duration: .long, aspectRatio: .widescreen)
             } else {
                 let imageURL = URL(string: "https://images.unsplash.com/photo-1542051841857-5f90071e7989?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wAWdlfHx8fGVufDB8fHx8fA%3D%3D")!
-                videoURL = try await runveyKit.generateVideo(prompt: promptText, imageURL: imageURL, duration: .long, aspectRatio: .widescreen)
+                videoURL = try await shipinKit.generateVideo(prompt: promptText, imageURL: imageURL, duration: .long, aspectRatio: .widescreen)
             }
 
             debugPrint("DEBUG: Successfully generated video, URL: \(videoURL)")

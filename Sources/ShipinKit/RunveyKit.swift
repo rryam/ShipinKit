@@ -10,14 +10,14 @@ import AppKit
 #endif
 
 /// A struct that encapsulates the RunwayML REST API functionality
-public struct RunveyKit {
+public struct ShipinKit {
     private let apiKey: String
     private let baseURL = URL(string: "https://api.dev.runwayml.com/v1")!
     private let logger = Logger(subsystem: "com.runveykit", category: "API")
     
     public init(apiKey: String) {
         self.apiKey = apiKey
-        logger.info("RunveyKit initialized with API key: \(apiKey)")
+        logger.info("ShipinKit initialized with API key: \(apiKey)")
     }
     
     /// Response model for image generation
@@ -79,14 +79,14 @@ public struct RunveyKit {
     ///
     /// - Example:
     ///   ```swift
-    ///   import RunveyKit
+    ///   import ShipinKit
     ///
     ///   do {
-    ///       let runveyKit = RunveyKit(apiKey: "YOUR_API_KEY_HERE")
+    ///       let shipinKit = ShipinKit(apiKey: "YOUR_API_KEY_HERE")
     ///       let prompt = "Dynamic tracking shot: The camera glides through the iconic Shibuya Crossing in Tokyo at night, capturing the bustling intersection bathed in vibrant neon lights. Countless pedestrians cross the wide intersection as towering digital billboards illuminate the scene with colorful advertisements. The wet pavement reflects the dazzling lights, creating a cinematic urban atmosphere."
     ///       let imageURL = URL(string: "https://images.unsplash.com/photo-1542051841857-5f90071e7989?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")!
     ///
-    ///       let taskID = try await runveyKit.generateTask(
+    ///       let taskID = try await shipinKit.generateTask(
     ///           prompt: prompt,
     ///           imageURL: imageURL,
     ///           duration: .long, // 10 seconds
@@ -199,7 +199,7 @@ public struct RunveyKit {
     /// - Throws: RunwayMLError
     public func generateTask(
         prompt: String,
-        image: RunveyImage,
+        image: ShipinImage,
         duration: VideoDuration = .short,
         aspectRatio: AspectRatio = .widescreen,
         watermark: Bool = false,
@@ -218,7 +218,7 @@ public struct RunveyKit {
     /// - Returns: A base64 string representation of the image
     ///
     /// - Throws: RunwayMLError if the image is too large
-    public func imageToBase64String(_ image: RunveyImage) throws -> String {
+    public func imageToBase64String(_ image: ShipinImage) throws -> String {
         logger.debug("Converting RunwayImage to base64 string")
         let imageData: Data
 #if os(macOS)
@@ -389,7 +389,7 @@ public struct RunveyKit {
     ///
     /// - Parameters:
     ///   - prompt: A string describing the desired video content.
-    ///   - image: A `RunveyImage` object representing the input image.
+    ///   - image: A `ShipinImage` object representing the input image.
     ///   - duration: The desired duration of the video. Defaults to `.short`.
     ///   - aspectRatio: The aspect ratio of the video. Defaults to `.widescreen`.
     ///   - watermark: A boolean indicating whether to include a watermark. Defaults to `false`.
@@ -401,8 +401,8 @@ public struct RunveyKit {
     ///
     /// - Example:
     ///   ```swift
-    ///   let runvey = RunveyKit(apiKey: "your-api-key")
-    ///   let image = RunveyImage(data: imageData)
+    ///   let runvey = ShipinKit(apiKey: "your-api-key")
+    ///   let image = ShipinImage(data: imageData)
     ///   do {
     ///       let videoURL = try await runvey.generateVideo(
     ///           prompt: "A serene lake with mountains in the background",
@@ -415,7 +415,7 @@ public struct RunveyKit {
     ///       print("Error generating video: \(error)")
     ///   }
     ///   ```
-    public func generateVideo(prompt: String, image: RunveyImage, duration: VideoDuration = .short, aspectRatio: AspectRatio = .widescreen, watermark: Bool = false, seed: Int? = nil) async throws -> URL {
+    public func generateVideo(prompt: String, image: ShipinImage, duration: VideoDuration = .short, aspectRatio: AspectRatio = .widescreen, watermark: Bool = false, seed: Int? = nil) async throws -> URL {
         logger.info("Starting video generation")
         
         let taskID = try await generateTask(prompt: prompt, image: image, duration: duration, aspectRatio: aspectRatio, watermark: watermark, seed: seed)
@@ -442,7 +442,7 @@ public struct RunveyKit {
     ///
     /// - Example:
     ///   ```swift
-    ///   let runvey = RunveyKit(apiKey: "your-api-key")
+    ///   let runvey = ShipinKit(apiKey: "your-api-key")
     ///   let imageURL = URL(string: "https://example.com/input-image.jpg")!
     ///   do {
     ///       let videoURL = try await runvey.generateVideo(

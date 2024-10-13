@@ -1,6 +1,6 @@
 //
 //  RunwayMLError.swift
-//  RunveyKit
+//  ShipinKit
 //
 //  Created by Rudrank Riyam on 10/9/24.
 //

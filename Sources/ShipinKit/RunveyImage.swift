@@ -1,6 +1,6 @@
 //
-//  RunveyImage.swift
-//  RunveyKit
+//  ShipinImage.swift
+//  ShipinKit
 //
 //  Created by Rudrank Riyam on 10/9/24.
 //
@@ -14,7 +14,7 @@ import AppKit
 #endif
 
 #if os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
-public typealias RunveyImage = UIImage
+public typealias ShipinImage = UIImage
 #elseif os(macOS)
-public typealias RunveyImage = NSImage
+public typealias ShipinImage = NSImage
 #endif

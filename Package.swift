@@ -4,7 +4,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "RunveyKit",
+    name: "ShipinKit",
     platforms: [
         .iOS(.v16),
         .macOS(.v14),
@@ -14,20 +14,20 @@ let package = Package(
     ],
     products: [
         .library(
-            name: "RunveyKit",
+            name: "ShipinKit",
             type: .static,
-            targets: ["RunveyKit"])
+            targets: ["ShipinKit"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0")
     ],
     targets: [
         .target(
-            name: "RunveyKit",
+            name: "ShipinKit",
             dependencies: []),
         .testTarget(
-            name: "RunveyKitTests",
-            dependencies: ["RunveyKit"]
+            name: "ShipinKitTests",
+            dependencies: ["ShipinKit"]
         )
     ]
 )

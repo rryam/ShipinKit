@@ -1,6 +1,6 @@
-# RunveyKit: Unofficial Swift Library for RunwayML
+# ShipinKit: Swift SDK for Prototyping AI Video Generation
 
-RunveyKit is an unofficial Swift SDK for the RunwayML REST API, designed for quick prototyping and easy integration with RunwayML's image generation capabilities. The name is based on the Hindi word for Runway, which is रनवे.
+ShipinKit is an unofficial Swift SDK designed for quick prototyping and easy integration with video generation capabilities. The name is based on the Chinese word for video, which is 视频.
 
 <a href="https://www.emergetools.com/app/example/ios/runveykit.RunveyKit/manual?utm_campaign=badge-data"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fwww.emergetools.com%2Fapi%2Fv2%2Fpublic_new_build%3FexampleId%3Drunveykit.RunveyKit%26platform%3Dios%26badgeOption%3Dversion_and_max_install_size%26buildType%3Dmanual&query=$.badgeMetadata&label=RunveyKit&logo=apple" /></a>
 
@@ -20,11 +20,11 @@ RunveyKit is an unofficial Swift SDK for the RunwayML REST API, designed for qui
 
 ## Installation
 
-Add RunveyKit to your Swift package dependencies:
+Add ShipinKit to your Swift package dependencies:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/rryam/RunveyKit.git", from: "1.0.0")
+    .package(url: "https://github.com/rryam/ShipinKit.git", from: "1.0.0")
 ]
 ```
 
@@ -34,11 +34,11 @@ This library is intended for quick prototyping and development purposes only. Fo
 
 ## Usage
 
-Here are examples of how to use RunveyKit to generate videos:
+Here are examples of how to use ShipinKit to generate videos:
 
 ```swift
 // Generate video from image data
-let runvey = RunveyKit(apiKey: "your-api-key")
+let runvey = ShipinKit(apiKey: "your-api-key")
 let image = UIImage(named: "input-image.jpg")!
 do {
     let videoURL = try await runvey.generateVideo(
@@ -53,7 +53,7 @@ do {
 }
 
 // Generate video from image URL
-let runvey = RunveyKit(apiKey: "your-api-key")
+let runvey = ShipinKit(apiKey: "your-api-key")
 let imageURL = URL(string: "https://example.com/input-image.jpg")!
 do {
     let videoURL = try await runvey.generateVideo(
@@ -69,17 +69,17 @@ do {
 }
 ```
 
-Here is a basic example of how to use RunveyKit to generate a task if you prefer manual control:
+Here is a basic example of how to use ShipinKit to generate a task if you prefer manual control:
 
 ```swift
-import RunveyKit
+import ShipinKit
 
 do {
     let prompt = "Dynamic tracking shot: The camera glides through the iconic Shibuya Crossing in Tokyo at night, capturing the bustling intersection bathed in vibrant neon lights. Countless pedestrians cross the wide intersection as towering digital billboards illuminate the scene with colorful advertisements. The wet pavement reflects the dazzling lights, creating a cinematic urban atmosphere."
     let imageURL = URL(string: "https://images.unsplash.com/photo-1542051841857-5f90071e7989?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")!
 
-    let runveyKit = RunveyKit(apiKey: "YOUR_API_KEY_HERE")
-    let taskID = try await runveyKit.generateTask(
+    let shipinKit = ShipinKit(apiKey: "YOUR_API_KEY_HERE")
+    let taskID = try await shipinKit.generateTask(
         prompt: prompt,
         imageURL: imageURL,
         duration: .long, // 10 seconds
@@ -95,12 +95,12 @@ do {
 Here's an example of how to retrieve task details and process them into a human-readable description:
 
 ```swift
-import RunveyKit
+import ShipinKit
 
     do {
-        let runveyKit = RunveyKit(apiKey: "YOUR_API_KEY_HERE")
+        let shipinKit = ShipinKit(apiKey: "YOUR_API_KEY_HERE")
         let taskId = "17f20503-6c24-4c16-946b-35dbbce2af2f"
-        let taskDetails = try await RunveyKit.getTaskDetails(id: taskId)
+        let taskDetails = try await shipinKit.getTaskDetails(id: taskId)
         print(taskDetails)
     } catch {
         print("Error: \(error)")
@@ -110,12 +110,12 @@ import RunveyKit
 And here's an example of how to cancel or delete a task:
 
 ```swift
-import RunveyKit
+import ShipinKit
 
     do {
-        let runveyKit = RunveyKit(apiKey: "YOUR_API_KEY_HERE")
+        let shipinKit = ShipinKit(apiKey: "YOUR_API_KEY_HERE")
         let taskId = "17f20503-6c24-4c16-946b-35dbbce2af2f"
-        try await RunveyKit.cancelOrDeleteTask(id: taskId)
+        try await shipinKit.cancelOrDeleteTask(id: taskId)
         print("Task \(taskId) has been successfully canceled or deleted.")
     } catch {
         print("Error canceling or deleting task: \(error)")
@@ -132,4 +132,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Disclaimer
 
-This is an unofficial library and is not affiliated with or endorsed by RunwayML.
+This is an unofficial library and is not affiliated with or endorsed by RunwayML, Luma Labs or Kling AI.
