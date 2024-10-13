@@ -1,13 +1,13 @@
 {
-  "originHash" : "f8fc4f5f107a34bd159cb725372d4586dca206819560a8cbf00f94a188fee5b1",
+  "originHash" : "442e2eeb878f139bf615c24f872eb76df0f290f14a41e266d5866a2b0df53da0",
   "pins" : [
     {
-      "identity" : "runveykit",
+      "identity" : "shipinkit",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/rryam/RunveyKit",
+      "location" : "https://github.com/rryam/ShipinKit",
       "state" : {
         "branch" : "main",
-        "revision" : "396d3a7542a8a98492dfd0c46d728284323f13af"
+        "revision" : "d34a2137662c79bb0c0b19858b2615247aedb580"
       }
     }
   ],
