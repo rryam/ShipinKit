@@ -6,12 +6,17 @@
 //
 
 import Foundation
+#if canImport(BackgroundTasks)
+import BackgroundTasks
+#endif
 
 /// A client for interacting with the Luma AI API.
-public class LumaAIClient {
+actor LumaAIClient {
   private let apiKey: String
   private let session: URLSession
   private let baseURL = URL(string: "https://api.lumalabs.ai")!
+
+  private var generationTasks: [String: Task<Void, Error>] = [:]
 
   /// Initializes a new instance of `LumaAIClient`
   ///
@@ -152,5 +157,79 @@ public class LumaAIClient {
     if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
       throw LumaAIError.httpError(statusCode: httpResponse.statusCode)
     }
+  }
+
+  /// Retrieves a list of supported camera motions from the Luma AI API.
+  ///
+  /// - Returns: An array of strings representing supported camera motions.
+  ///
+  /// - Throws: `LumaAIError.httpError` if the API request fails, or `LumaAIError.decodingError` if the response cannot be decoded.
+  public func listCameraMotions() async throws -> [String] {
+    let url = baseURL.appendingPathComponent("/dream-machine/v1/generations/camera_motion/list")
+    var request = URLRequest(url: url)
+    request.httpMethod = "GET"
+    request.addValue("application/json", forHTTPHeaderField: "accept")
+    request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "authorization")
+
+    let (data, response) = try await session.data(for: request)
+
+    if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
+      throw LumaAIError.httpError(statusCode: httpResponse.statusCode)
+    }
+
+    let decoder = JSONDecoder()
+    do {
+      let cameraMotions = try decoder.decode([String].self, from: data)
+      return cameraMotions
+    } catch {
+      throw LumaAIError.decodingError(underlying: error)
+    }
+  }
+
+  public func createGenerationWithUpdates(prompt: String, aspectRatio: String = "16:9", loop: Bool, keyframes: [String: LumaAIKeyframeData]) async throws {
+    let initialResponse = try await createGeneration(prompt: prompt, aspectRatio: aspectRatio, loop: loop, keyframes: keyframes)
+
+    let task = Task<Void, Error> {
+      var currentResponse = initialResponse
+
+      while currentResponse.state != "completed" && currentResponse.state != "failed" {
+        try await Task.sleep(for: .seconds(5))
+        currentResponse = try await self.checkGenerationStatus(id: currentResponse.id)
+      }
+    }
+
+    self.generationTasks[initialResponse.id] = task
+
+    do {
+      try await task.value
+    } catch {
+      self.generationTasks.removeValue(forKey: initialResponse.id)
+      throw error
+    }
+
+    self.generationTasks.removeValue(forKey: initialResponse.id)
+  }
+
+  private func checkGenerationStatus(id: String) async throws -> LumaAIGenerationResponse {
+    let url = baseURL.appendingPathComponent("/dream-machine/v1/generations/\(id)")
+    var request = URLRequest(url: url)
+    request.httpMethod = "GET"
+    request.addValue("application/json", forHTTPHeaderField: "accept")
+    request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "authorization")
+
+    let (data, response) = try await session.data(for: request)
+
+    guard let httpResponse = response as? HTTPURLResponse, 200...299 ~= httpResponse.statusCode else {
+      throw LumaAIError.invalidResponse
+    }
+
+    let decoder = JSONDecoder()
+    decoder.keyDecodingStrategy = .convertFromSnakeCase
+    return try decoder.decode(LumaAIGenerationResponse.self, from: data)
+  }
+
+  public func cancelGenerationUpdates(id: String) {
+    generationTasks[id]?.cancel()
+    generationTasks.removeValue(forKey: id)
   }
 }

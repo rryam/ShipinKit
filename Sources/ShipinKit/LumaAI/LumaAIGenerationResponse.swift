@@ -8,7 +8,7 @@
 import Foundation
 
 /// Represents the response from the Luma AI generation API.
-public struct LumaAIGenerationResponse: Codable {
+public struct LumaAIGenerationResponse: Codable, Sendable {
   public let id: String
   public let state: String
   public let failureReason: String?
@@ -29,12 +29,12 @@ public struct LumaAIGenerationResponse: Codable {
 }
 
 /// Contains the assets returned by the Luma AI generation API.
-public struct LumaAIAssets: Codable {
+public struct LumaAIAssets: Codable, Sendable {
   public let video: String
 }
 
 /// Represents the original request sent to the Luma AI generation API.
-public struct LumaAIGenerationRequest: Codable {
+public struct LumaAIGenerationRequest: Codable, Sendable {
   public let prompt: String
   public let aspectRatio: String
   public let loop: Bool
@@ -51,14 +51,14 @@ public struct LumaAIGenerationRequest: Codable {
 }
 
 /// Represents keyframe data in the generation request.
-public struct LumaAIKeyframeData: Codable {
+public struct LumaAIKeyframeData: Codable, Sendable {
   public let type: LumaAIKeyframeType
   public let url: String?
   public let id: String?
 }
 
 /// Represents the type of keyframe in the generation request.
-public enum LumaAIKeyframeType: String, Codable {
+public enum LumaAIKeyframeType: String, Codable, Sendable {
   case generation
   case image
 }
