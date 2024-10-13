@@ -18,7 +18,7 @@
                BlueprintIdentifier = "0AC98B7F2CB3B21700C9CA79"
                BuildableName = "Shipin.app"
                BlueprintName = "Shipin"
-               ReferencedContainer = "container:Runvey.xcodeproj">
+               ReferencedContainer = "container:Shipin.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -47,7 +47,7 @@
             BlueprintIdentifier = "0AC98B7F2CB3B21700C9CA79"
             BuildableName = "Shipin.app"
             BlueprintName = "Shipin"
-            ReferencedContainer = "container:Runvey.xcodeproj">
+            ReferencedContainer = "container:Shipin.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <EnvironmentVariables>
@@ -71,7 +71,7 @@
             BlueprintIdentifier = "0AC98B7F2CB3B21700C9CA79"
             BuildableName = "Shipin.app"
             BlueprintName = "Shipin"
-            ReferencedContainer = "container:Runvey.xcodeproj">
+            ReferencedContainer = "container:Shipin.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
