@@ -52,7 +52,13 @@ public struct LumaAIGenerationRequest: Codable {
 
 /// Represents keyframe data in the generation request.
 public struct LumaAIKeyframeData: Codable {
-  public let type: String
+  public let type: LumaAIKeyframeType
   public let url: String?
   public let id: String?
+}
+
+/// Represents the type of keyframe in the generation request.
+public enum LumaAIKeyframeType: String, Codable {
+  case generation
+  case image
 }
