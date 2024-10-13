@@ -7,7 +7,7 @@ jobs:
     name: Build XCFramework
     runs-on: macos-latest
     env:
-      PACKAGE_NAME: RunveyKit
+      PACKAGE_NAME: ShipinKit
     steps:
       - uses: actions/checkout@v4
       - name: Setup Xcode
