@@ -6,6 +6,7 @@
 //
 
 import Foundation
+
 /// Represents the response from the Luma AI generation API.
 ///
 /// This struct encapsulates the data returned by the Luma AI generation API, including
@@ -24,7 +25,7 @@ public struct LumaAIGenerationResponse: Codable, Sendable {
   public let offset: Int
   
   /// An array of generation details.
-  public let generations: [LumaAIGeneration]
+  public let generations: [LumaAIGeneration]?
   
   /// Represents a single generation in the response.
   public struct LumaAIGeneration: Codable, Sendable {
@@ -43,11 +44,21 @@ public struct LumaAIGenerationResponse: Codable, Sendable {
     /// The assets associated with the generation.
     public let assets: LumaAIAssets
     
-    /// The version of the Luma AI API used for this generation.
-    public let version: String
+    /// The version of the Luma AI API used for this generation. Can be null.
+    public let version: String?
     
     /// The original request parameters used for this generation.
     public let request: LumaAIGenerationRequest
+
+    enum CodingKeys: String, CodingKey {
+      case id
+      case state
+      case failureReason = "failure_reason"
+      case createdAt = "created_at"
+      case assets
+      case version
+      case request
+    }
   }
   
   enum CodingKeys: String, CodingKey {
@@ -61,15 +72,25 @@ public struct LumaAIGenerationResponse: Codable, Sendable {
 
 /// Contains the assets returned by the Luma AI generation API.
 public struct LumaAIAssets: Codable, Sendable {
+  /// The URL of the generated video.
   public let video: String
 }
 
 /// Represents the original request sent to the Luma AI generation API.
 public struct LumaAIGenerationRequest: Codable, Sendable {
+  /// The prompt used for generation.
   public let prompt: String
+  
+  /// The aspect ratio of the generated video.
   public let aspectRatio: String
+  
+  /// Indicates whether the video should loop.
   public let loop: Bool
+  
+  /// Keyframes used in the generation process.
   public let keyframes: [String: LumaAIKeyframeData]
+  
+  /// The callback URL for the generation process. Can be null.
   public let callbackURL: String?
 
   enum CodingKeys: String, CodingKey {
@@ -83,7 +104,10 @@ public struct LumaAIGenerationRequest: Codable, Sendable {
 
 /// Represents keyframe data in the generation request.
 public struct LumaAIKeyframeData: Codable, Sendable {
+  /// The type of the keyframe.
   public let type: LumaAIKeyframeType
+  
+  /// The URL associated with the keyframe. Can be null.
   public let url: String?
 }
 
