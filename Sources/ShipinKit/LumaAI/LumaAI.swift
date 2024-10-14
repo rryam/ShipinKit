@@ -51,10 +51,13 @@ public actor LumaAI {
     let bodyData = try encoder.encode(requestBody)
     request.httpBody = bodyData
 
+    print("Request Body: \(String(data: bodyData, encoding: .utf8) ?? "")")
+
     let (data, response) = try await URLSession.shared.data(for: request)
 
     if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
-      throw LumaAIError.httpError(statusCode: httpResponse.statusCode)
+        print("Error Response: \(String(data: data, encoding: .utf8) ?? "")")
+        throw LumaAIError.httpError(statusCode: httpResponse.statusCode)
     }
 
     let decoder = JSONDecoder()
@@ -106,7 +109,9 @@ public actor LumaAI {
   /// - Returns: An array of `LumaAIGenerationResponse` objects representing the list of generations.
   ///
   /// - Throws: `LumaAIError.httpError` if the API request fails, or `LumaAIError.decodingError` if the response cannot be decoded.
-  public func listGenerations(limit: Int = 10, offset: Int = 0) async throws -> [LumaAIGenerationResponse] {
+  public func listGenerations(limit: Int = 10, offset: Int = 0) async throws -> LumaAIGenerationResponse {
+    debugPrint("Entering listGenerations with limit: \(limit), offset: \(offset)")
+    
     var components = URLComponents(url: baseURL.appendingPathComponent("/dream-machine/v1/generations"), resolvingAgainstBaseURL: true)
     components?.queryItems = [
       URLQueryItem(name: "limit", value: String(limit)),
@@ -114,26 +119,45 @@ public actor LumaAI {
     ]
 
     guard let url = components?.url else {
+      debugPrint("Error: Failed to construct URL")
       throw URLError(.badURL)
     }
+    debugPrint("Constructed URL: \(url)")
 
     var request = URLRequest(url: url)
     request.httpMethod = "GET"
     request.addValue("application/json", forHTTPHeaderField: "accept")
     request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "authorization")
+    debugPrint("Request headers: \(request.allHTTPHeaderFields ?? [:])")
 
+    debugPrint("Sending request...")
     let (data, response) = try await URLSession.shared.data(for: request)
+    debugPrint("Received response")
 
-    if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
-      throw LumaAIError.httpError(statusCode: httpResponse.statusCode)
+    if let httpResponse = response as? HTTPURLResponse {
+      debugPrint("HTTP Status Code: \(httpResponse.statusCode)")
+      if !(200...299).contains(httpResponse.statusCode) {
+        debugPrint("Error: HTTP request failed")
+        throw LumaAIError.httpError(statusCode: httpResponse.statusCode)
+      }
+    }
+
+    debugPrint("Response data size: \(data.count) bytes")
+    if let responseString = String(data: data, encoding: .utf8) {
+      debugPrint("Response body: \(responseString)")
     }
 
     let decoder = JSONDecoder()
     decoder.keyDecodingStrategy = .convertFromSnakeCase
     do {
-      let generationResponses = try decoder.decode([LumaAIGenerationResponse].self, from: data)
+      debugPrint("Attempting to decode response...")
+      let generationResponses = try decoder.decode(LumaAIGenerationResponse.self, from: data)
+      debugPrint("Successfully decoded response")
+      debugPrint("Number of generations: \(generationResponses.generations.count)")
       return generationResponses
     } catch {
+      debugPrint("Error: Failed to decode response")
+      debugPrint("Decoding error: \(error)")
       throw LumaAIError.decodingError(underlying: error)
     }
   }
@@ -159,9 +183,23 @@ public actor LumaAI {
 
   /// Retrieves a list of supported camera motions from the Luma AI API.
   ///
+  /// This method fetches an array of strings representing various camera motion options
+  /// that can be used in video generation. These motions define how the virtual camera
+  /// moves during the generated video sequence.
+  ///
+  /// Possible camera motions include:
+  /// - Static: No camera movement
+  /// - Move Left/Right/Up/Down: Camera translates in the specified direction
+  /// - Push In/Pull Out: Camera moves forward or backward
+  /// - Zoom In/Out: Camera lens zooms in or out
+  /// - Pan Left/Right: Camera rotates horizontally
+  /// - Orbit Left/Right: Camera circles around the subject
+  /// - Crane Up/Down: Camera moves vertically, typically on a crane or jib
+  ///
   /// - Returns: An array of strings representing supported camera motions.
   ///
-  /// - Throws: `LumaAIError.httpError` if the API request fails, or `LumaAIError.decodingError` if the response cannot be decoded.
+  /// - Throws: `LumaAIError.httpError` if the API request fails, or
+  ///           `LumaAIError.decodingError` if the response cannot be decoded.
   public func listCameraMotions() async throws -> [String] {
     let url = baseURL.appendingPathComponent("/dream-machine/v1/generations/camera_motion/list")
     var request = URLRequest(url: url)
@@ -190,22 +228,22 @@ public actor LumaAI {
     let task = Task<Void, Error> {
       var currentResponse = initialResponse
 
-      while currentResponse.state != "completed" && currentResponse.state != "failed" {
+      while currentResponse.generations.first?.state != "completed" && currentResponse.generations.first?.state != "failed" {
         try await Task.sleep(for: .seconds(5))
-        currentResponse = try await self.checkGenerationStatus(id: currentResponse.id)
+        currentResponse = try await self.checkGenerationStatus(id: currentResponse.generations.first?.id ?? "")
       }
     }
 
-    self.generationTasks[initialResponse.id] = task
+    self.generationTasks[initialResponse.generations.first?.id ?? ""] = task
 
     do {
       try await task.value
     } catch {
-      self.generationTasks.removeValue(forKey: initialResponse.id)
+      self.generationTasks.removeValue(forKey: initialResponse.generations.first?.id ?? "")
       throw error
     }
 
-    self.generationTasks.removeValue(forKey: initialResponse.id)
+    self.generationTasks.removeValue(forKey: initialResponse.generations.first?.id ?? "")
   }
 
   private func checkGenerationStatus(id: String) async throws -> LumaAIGenerationResponse {

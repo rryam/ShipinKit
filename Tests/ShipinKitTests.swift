@@ -9,11 +9,11 @@ import XCTest
 @testable import ShipinKit
 
 final class ShipinKitTests: XCTestCase {
-  var shipinKit: ShipinKit!
+  var shipinKit: RunwayML!
 
   override func setUp() {
     super.setUp()
-    shipinKit = ShipinKit(apiKey: "KEY_HERE")
+    shipinKit = RunwayML(apiKey: "KEY_HERE")
   }
 
   func testShipinKitInitialization() {
