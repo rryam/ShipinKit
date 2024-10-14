@@ -427,7 +427,7 @@ public actor RunwayML {
 
     return try await pollTaskStatus(id: taskID)
   }
-  
+
   private func pollTaskStatus(id: String) async throws -> URL {
     logger.debug("Starting to poll task status for ID: \(id)")
 
