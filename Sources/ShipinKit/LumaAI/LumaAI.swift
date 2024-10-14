@@ -1,5 +1,5 @@
 //
-//  LumaAIClient.swift
+//  LumaAI.swift
 //  ShipinKit
 //
 //  Created by Rudrank Riyam on 10/13/24.
@@ -11,9 +11,8 @@ import BackgroundTasks
 #endif
 
 /// A client for interacting with the Luma AI API.
-actor LumaAIClient {
+public actor LumaAI {
   private let apiKey: String
-  private let session: URLSession
   private let baseURL = URL(string: "https://api.lumalabs.ai")!
 
   private var generationTasks: [String: Task<Void, Error>] = [:]
@@ -23,9 +22,8 @@ actor LumaAIClient {
   /// - Parameters:
   ///   - apiKey: Your Luma AI API key.
   ///   - session: The URLSession to use for network requests. Defaults to `URLSession.shared`.
-  public init(apiKey: String, session: URLSession = .shared) {
+  public init(apiKey: String) {
     self.apiKey = apiKey
-    self.session = session
   }
 
   /// Initiates a generation request to the Luma AI API.
@@ -53,7 +51,7 @@ actor LumaAIClient {
     let bodyData = try encoder.encode(requestBody)
     request.httpBody = bodyData
 
-    let (data, response) = try await session.data(for: request)
+    let (data, response) = try await URLSession.shared.data(for: request)
 
     if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
       throw LumaAIError.httpError(statusCode: httpResponse.statusCode)
@@ -83,7 +81,7 @@ actor LumaAIClient {
     request.addValue("application/json", forHTTPHeaderField: "accept")
     request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "authorization")
 
-    let (data, response) = try await session.data(for: request)
+    let (data, response) = try await URLSession.shared.data(for: request)
 
     if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
       throw LumaAIError.httpError(statusCode: httpResponse.statusCode)
@@ -124,7 +122,7 @@ actor LumaAIClient {
     request.addValue("application/json", forHTTPHeaderField: "accept")
     request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "authorization")
 
-    let (data, response) = try await session.data(for: request)
+    let (data, response) = try await URLSession.shared.data(for: request)
 
     if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
       throw LumaAIError.httpError(statusCode: httpResponse.statusCode)
@@ -152,7 +150,7 @@ actor LumaAIClient {
     request.addValue("application/json", forHTTPHeaderField: "accept")
     request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "authorization")
 
-    let (_, response) = try await session.data(for: request)
+    let (_, response) = try await URLSession.shared.data(for: request)
 
     if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
       throw LumaAIError.httpError(statusCode: httpResponse.statusCode)
@@ -171,7 +169,7 @@ actor LumaAIClient {
     request.addValue("application/json", forHTTPHeaderField: "accept")
     request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "authorization")
 
-    let (data, response) = try await session.data(for: request)
+    let (data, response) = try await URLSession.shared.data(for: request)
 
     if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
       throw LumaAIError.httpError(statusCode: httpResponse.statusCode)
@@ -217,7 +215,7 @@ actor LumaAIClient {
     request.addValue("application/json", forHTTPHeaderField: "accept")
     request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "authorization")
 
-    let (data, response) = try await session.data(for: request)
+    let (data, response) = try await URLSession.shared.data(for: request)
 
     guard let httpResponse = response as? HTTPURLResponse, 200...299 ~= httpResponse.statusCode else {
       throw LumaAIError.invalidResponse
