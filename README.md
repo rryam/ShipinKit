@@ -1,4 +1,6 @@
 # ShipinKit: Swift SDK for Prototyping AI Video Generation
+[![Star History Chart](https://api.star-history.com/svg?repos=rryam/ShipinKit&type=Date)](https://star-history.com/#rryam/ShipinKit&Date)
+
 
 ShipinKit is an unofficial Swift SDK designed for quick prototyping and easy integration with video generation capabilities. The name is based on the Chinese word for video, which is 视频.
 
