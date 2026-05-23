@@ -153,7 +153,7 @@ public actor LumaAI {
       debugPrint("Attempting to decode response...")
       let generationResponses = try decoder.decode(LumaAIGenerationResponse.self, from: data)
       debugPrint("Successfully decoded response")
-      debugPrint("Number of generations: \(generationResponses.generations.count)")
+      debugPrint("Number of generations: \(generationResponses.generations?.count ?? 0)")
       return generationResponses
     } catch {
       debugPrint("Error: Failed to decode response")
@@ -224,26 +224,29 @@ public actor LumaAI {
 
   public func createGenerationWithUpdates(prompt: String, aspectRatio: String = "16:9", loop: Bool, keyframes: [String: LumaAIKeyframeData]) async throws {
     let initialResponse = try await createGeneration(prompt: prompt, aspectRatio: aspectRatio, loop: loop, keyframes: keyframes)
+    guard let generationID = initialResponse.generations?.first?.id else {
+      throw LumaAIError.invalidResponse
+    }
 
     let task = Task<Void, Error> {
       var currentResponse = initialResponse
 
-      while currentResponse.generations.first?.state != "completed" && currentResponse.generations.first?.state != "failed" {
+      while currentResponse.generations?.first?.state != "completed" && currentResponse.generations?.first?.state != "failed" {
         try await Task.sleep(for: .seconds(5))
-        currentResponse = try await self.checkGenerationStatus(id: currentResponse.generations.first?.id ?? "")
+        currentResponse = try await self.checkGenerationStatus(id: currentResponse.generations?.first?.id ?? "")
       }
     }
 
-    self.generationTasks[initialResponse.generations.first?.id ?? ""] = task
+    self.generationTasks[generationID] = task
 
     do {
       try await task.value
     } catch {
-      self.generationTasks.removeValue(forKey: initialResponse.generations.first?.id ?? "")
+      self.generationTasks.removeValue(forKey: generationID)
       throw error
     }
 
-    self.generationTasks.removeValue(forKey: initialResponse.generations.first?.id ?? "")
+    self.generationTasks.removeValue(forKey: generationID)
   }
 
   private func checkGenerationStatus(id: String) async throws -> LumaAIGenerationResponse {

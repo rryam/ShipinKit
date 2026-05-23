@@ -7,6 +7,14 @@
 
 import Foundation
 
+#if canImport(UIKit)
+import UIKit
+#endif
+
+#if canImport(AppKit)
+import AppKit
+#endif
+
 /// Represents the choice of AI service to use in ShipinKit.
 public enum AIService {
   case lumaAI(apiKey: String)
