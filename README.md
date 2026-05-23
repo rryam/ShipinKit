@@ -1,17 +1,8 @@
 # ShipinKit: Swift SDK for Prototyping AI Video Generation
 
-
 ShipinKit is an unofficial Swift SDK designed for quick prototyping and easy integration with video generation capabilities. The name is based on the Chinese word for video, which is 视频.
 
 <a href="https://www.emergetools.com/app/example/ios/runveykit.RunveyKit/manual?utm_campaign=badge-data"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fwww.emergetools.com%2Fapi%2Fv2%2Fpublic_new_build%3FexampleId%3Drunveykit.RunveyKit%26platform%3Dios%26badgeOption%3Dversion_and_max_install_size%26buildType%3Dmanual&query=$.badgeMetadata&label=RunveyKit&logo=apple" /></a>
-
-## Support
-
-Love this project? Check out my books to explore more of AI and iOS development:
-- [Exploring AI for iOS Development](https://academy.rudrank.com/product/ai)
-- [Exploring AI-Assisted Coding for iOS Development](https://academy.rudrank.com/product/ai-assisted-coding)
-
-Your support helps to keep this project growing!
 
 ## Features
 
