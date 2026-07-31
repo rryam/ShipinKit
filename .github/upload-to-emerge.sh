@@ -22,8 +22,8 @@ for command_name in curl jq; do
 done
 
 : "${EMERGE_API_KEY:?EMERGE_API_KEY is required}"
-: "${EMERGE_BASE_SHA:?EMERGE_BASE_SHA is required}"
 : "${EMERGE_BRANCH:?EMERGE_BRANCH is required}"
+: "${EMERGE_PREVIOUS_SHA:?EMERGE_PREVIOUS_SHA is required}"
 : "${EMERGE_REPOSITORY:?EMERGE_REPOSITORY is required}"
 : "${EMERGE_SHA:?EMERGE_SHA is required}"
 
@@ -33,15 +33,15 @@ request_body="$(
     --arg filename "$filename" \
     --arg branch "$EMERGE_BRANCH" \
     --arg sha "$EMERGE_SHA" \
-    --arg base_sha "$EMERGE_BASE_SHA" \
+    --arg previous_sha "$EMERGE_PREVIOUS_SHA" \
     --arg repository "$EMERGE_REPOSITORY" \
     '{
       filename: $filename,
       branch: $branch,
       sha: $sha,
-      baseSha: $base_sha,
+      previousSha: $previous_sha,
       repoName: $repository,
-      buildType: "release"
+      tag: "default"
     }'
 )"
 

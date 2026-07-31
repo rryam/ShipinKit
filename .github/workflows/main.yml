@@ -46,8 +46,8 @@ jobs:
       - name: Upload artifact to Emerge
         env:
           EMERGE_API_KEY: ${{ secrets.EMERGE_API_KEY }}
-          EMERGE_BASE_SHA: ${{ github.event.before }}
           EMERGE_BRANCH: ${{ github.ref_name }}
+          EMERGE_PREVIOUS_SHA: ${{ github.event.before }}
           EMERGE_REPOSITORY: ${{ github.repository }}
           EMERGE_SHA: ${{ github.sha }}
         run: bash ./.github/upload-to-emerge.sh "./build/${PACKAGE_NAME}.xcframework.zip"
