@@ -13,9 +13,9 @@ jobs:
     name: Test and Build
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
           xcode-version: latest-stable
       - name: Test
@@ -36,15 +36,15 @@ jobs:
     env:
       PACKAGE_NAME: ShipinKit
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
           xcode-version: latest-stable
       - name: Build XCFramework
-        run: sh ./.github/build.sh $PACKAGE_NAME
+        run: sh ./.github/build.sh "$PACKAGE_NAME"
       - name: Upload artifact to Emerge
-        uses: EmergeTools/emerge-upload-action@v1.1.0
+        uses: EmergeTools/emerge-upload-action@7c51f238d018b4ef4a90a60997213b89ae393e06 # v1.2.2
         with:
           build_type: release
           artifact_path: ./build/${{ env.PACKAGE_NAME }}.xcframework.zip
