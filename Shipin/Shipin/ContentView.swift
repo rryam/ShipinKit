@@ -95,29 +95,35 @@ struct ContentView: View {
             errorMessage = nil
         }
 
-        print("DEBUG: Starting video generation")
-
         let promptText = "Dynamic tracking shot: The camera glides through the iconic Shibuya Crossing in Tokyo at night, capturing the bustling intersection bathed in vibrant neon lights. Countless pedestrians cross the wide intersection as towering digital billboards illuminate the scene with colorful advertisements. The wet pavement reflects the dazzling lights, creating a cinematic urban atmosphere."
 
         do {
-            guard let apiKey = ProcessInfo.processInfo.environment["RUNWAYML_API_KEY"] else {
-                debugPrint("Warning: RUNWAYML_API_KEY not found in environment variables")
-                self.errorMessage = "Error: RUNWAYML_API_KEY not found in environment variables"
-                self.isLoading = false
-                return
+            let credential = ShipinCredential {
+                guard let apiKey = ProcessInfo.processInfo.environment["RUNWAYML_API_SECRET"] else {
+                    throw ShipinError.missingCredential
+                }
+                return apiKey
             }
-
-            let shipinKit = ShipinKit(apiKey: apiKey)
-            let videoURL: URL
+            let imageSource: RunwayMLImageSource
 
             if let selectedImage = selectedImage {
-                videoURL = try await shipinKit.generateVideo(prompt: promptText, image: selectedImage, duration: .long, aspectRatio: .widescreen)
+                imageSource = try RunwayML.imageSource(from: selectedImage)
             } else {
                 let imageURL = URL(string: "https://images.unsplash.com/photo-1542051841857-5f90071e7989?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wAWdlfHx8fGVufDB8fHx8fA%3D%3D")!
-                videoURL = try await shipinKit.generateVideo(prompt: promptText, imageURL: imageURL, duration: .long, aspectRatio: .widescreen)
+                imageSource = try RunwayMLImageSource(url: imageURL)
             }
 
-            debugPrint("DEBUG: Successfully generated video, URL: \(videoURL)")
+            let request = try RunwayMLImageToVideoRequest(
+                model: .gen4Turbo,
+                promptImage: imageSource,
+                promptText: promptText,
+                duration: .tenSeconds,
+                ratio: .landscape
+            )
+            let result = try await RunwayML(credential: credential).generateVideo(request)
+            guard let videoURL = result.output.first else {
+                throw ShipinError.missingOutput(provider: .runwayML)
+            }
 
             await MainActor.run {
                 self.generatedVideoURL = videoURL
@@ -128,7 +134,6 @@ struct ContentView: View {
                 self.errorMessage = "Error: \(error.localizedDescription)"
                 self.isLoading = false
             }
-            debugPrint("DEBUG: Error occurred: \(error.localizedDescription)")
         }
     }
 }

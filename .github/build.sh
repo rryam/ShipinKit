@@ -1,7 +1,6 @@
 #!/bin/bash
 
-set -e
-set -x  # Add debug output to help troubleshoot CI issues
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd -P)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -10,17 +9,20 @@ PROJECT_BUILD_DIR="${PROJECT_BUILD_DIR:-"${PROJECT_ROOT}/build"}"
 XCODEBUILD_BUILD_DIR="$PROJECT_BUILD_DIR/xcodebuild"
 XCODEBUILD_DERIVED_DATA_PATH="$XCODEBUILD_BUILD_DIR/DerivedData"
 
-# Ensure build directories exist and have correct permissions
+# Ensure build directories exist.
 mkdir -p "$PROJECT_BUILD_DIR"
 mkdir -p "$XCODEBUILD_BUILD_DIR"
 mkdir -p "$XCODEBUILD_DERIVED_DATA_PATH"
-chmod -R 755 "$PROJECT_BUILD_DIR"
 
-PACKAGE_NAME=$1
+PACKAGE_NAME=${1:-}
 if [ -z "$PACKAGE_NAME" ]; then
     echo "No package name provided. Using the first scheme found in the Package.swift."
     PACKAGE_NAME=$(xcodebuild -list | awk 'schemes && NF>0 { print $1; exit } /Schemes:$/ { schemes = 1 }')
     echo "Using: $PACKAGE_NAME"
+fi
+if [ -z "$PACKAGE_NAME" ]; then
+    echo "Error: No package scheme was provided or discovered."
+    exit 1
 fi
 
 build_framework() {
@@ -33,15 +35,15 @@ build_framework() {
     rm -rf "$XCODEBUILD_ARCHIVE_PATH"
 
     xcodebuild archive \
-        -scheme $scheme \
+        -quiet \
+        -scheme "$scheme" \
         -archivePath "$XCODEBUILD_ARCHIVE_PATH" \
         -derivedDataPath "$XCODEBUILD_DERIVED_DATA_PATH" \
         -sdk "$sdk" \
         -destination "$destination" \
         BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
         SKIP_INSTALL=NO \
-        INSTALL_PATH='Library/Frameworks' \
-        OTHER_SWIFT_FLAGS=-no-verify-emitted-module-interface
+        INSTALL_PATH='Library/Frameworks'
 
     # Check if archive was created successfully
     if [ ! -d "$XCODEBUILD_ARCHIVE_PATH" ]; then
@@ -63,11 +65,7 @@ build_framework() {
     # Delete private swiftinterface
     find "$FRAMEWORK_MODULES_PATH/$scheme.swiftmodule" -name "*.private.swiftinterface" -delete
     
-    # Ensure correct permissions
-    chmod -R 755 "$XCODEBUILD_ARCHIVE_PATH"
 }
-
-sed -i '' 's/type: \.static/type: .dynamic/g' Package.swift
 
 build_framework "iphonesimulator" "generic/platform=iOS Simulator" "$PACKAGE_NAME"
 build_framework "iphoneos" "generic/platform=iOS" "$PACKAGE_NAME"
@@ -89,8 +87,9 @@ mkdir -p "$XCFRAMEWORK_PATH/ios-arm64"
 cp -r "$PROJECT_BUILD_DIR/$PACKAGE_NAME-iphonesimulator.xcarchive/dSYMs" "$XCFRAMEWORK_PATH/ios-arm64_x86_64-simulator"
 cp -r "$PROJECT_BUILD_DIR/$PACKAGE_NAME-iphoneos.xcarchive/dSYMs" "$XCFRAMEWORK_PATH/ios-arm64"
 
-# Zip the xcframework
-zip -r "$PROJECT_BUILD_DIR/$PACKAGE_NAME.xcframework.zip" "$XCFRAMEWORK_PATH"
-
-# Ensure correct permissions for the final xcframework
-chmod -R 755 "$XCFRAMEWORK_PATH"
+# Zip the XCFramework with a portable top-level archive path.
+rm -f "$PROJECT_BUILD_DIR/$PACKAGE_NAME.xcframework.zip"
+(
+    cd "$PROJECT_BUILD_DIR"
+    zip -qry "$PACKAGE_NAME.xcframework.zip" "$PACKAGE_NAME.xcframework"
+)
