@@ -206,6 +206,10 @@ public actor RunwayML {
     let response: ShipinHTTPResponse
     do {
       response = try await transport.send(request)
+    } catch is CancellationError {
+      throw CancellationError()
+    } catch let error as URLError where error.code == .cancelled && Task.isCancelled {
+      throw CancellationError()
     } catch let error as ShipinError {
       throw error
     } catch {

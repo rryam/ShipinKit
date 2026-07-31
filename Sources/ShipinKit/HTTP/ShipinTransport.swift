@@ -31,6 +31,10 @@ public struct URLSessionShipinTransport: ShipinTransport {
         throw ShipinError.invalidHTTPResponse
       }
       return ShipinHTTPResponse(data: data, statusCode: response.statusCode)
+    } catch is CancellationError {
+      throw CancellationError()
+    } catch let error as URLError where error.code == .cancelled && Task.isCancelled {
+      throw CancellationError()
     } catch let error as ShipinError {
       throw error
     } catch {
