@@ -44,8 +44,10 @@ jobs:
       - name: Build XCFramework
         run: sh ./.github/build.sh "$PACKAGE_NAME"
       - name: Upload artifact to Emerge
-        uses: EmergeTools/emerge-upload-action@7c51f238d018b4ef4a90a60997213b89ae393e06 # v1.2.2
-        with:
-          build_type: release
-          artifact_path: ./build/${{ env.PACKAGE_NAME }}.xcframework.zip
-          emerge_api_key: ${{ secrets.EMERGE_API_KEY }}
+        env:
+          EMERGE_API_KEY: ${{ secrets.EMERGE_API_KEY }}
+          EMERGE_BASE_SHA: ${{ github.event.before }}
+          EMERGE_BRANCH: ${{ github.ref_name }}
+          EMERGE_REPOSITORY: ${{ github.repository }}
+          EMERGE_SHA: ${{ github.sha }}
+        run: bash ./.github/upload-to-emerge.sh "./build/${PACKAGE_NAME}.xcframework.zip"

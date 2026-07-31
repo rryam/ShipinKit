@@ -22,7 +22,8 @@ All notable changes to ShipinKit are documented here. The project follows
 - Replaced live placeholder tests with deterministic fixture transports.
 - Made `ShipinKit` a dynamic library so the existing XCFramework workflow consumes the
   package without rewriting its manifest.
-- Updated GitHub Actions to Node 24-compatible releases and pinned each action by commit.
+- Updated GitHub Actions to Node 24-compatible releases, pinned each remaining action
+  by commit, and replaced the stale Emerge wrapper with its current upload contract.
 
 ### Added
 
