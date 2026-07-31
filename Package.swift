@@ -15,12 +15,10 @@ let package = Package(
     products: [
         .library(
             name: "ShipinKit",
-            type: .static,
+            type: .dynamic,
             targets: ["ShipinKit"])
     ],
-    dependencies: [
-        .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0")
-    ],
+    dependencies: [],
     targets: [
         .target(
             name: "ShipinKit",

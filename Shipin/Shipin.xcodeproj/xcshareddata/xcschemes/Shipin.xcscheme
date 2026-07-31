@@ -50,13 +50,6 @@
             ReferencedContainer = "container:Shipin.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
-      <EnvironmentVariables>
-         <EnvironmentVariable
-            key = "RUNWAYML_API_KEY"
-            value = "key_d831f72458b285d4086f1c454d5161f2ca5fea2a4ffaeebce0c8ed86d91937b7427c2006b88b24784f7679d39b2100176557c06f1c363cad740e3d7d4c3e5df7"
-            isEnabled = "YES">
-         </EnvironmentVariable>
-      </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"

@@ -1,274 +1,281 @@
-//
-//  LumaAI.swift
-//  ShipinKit
-//
-//  Created by Rudrank Riyam on 10/13/24.
-//
-
 import Foundation
-#if canImport(BackgroundTasks)
-import BackgroundTasks
-#endif
 
-/// A client for interacting with the Luma AI API.
+/// A typed client for Luma's Dream Machine video API.
 public actor LumaAI {
-  private let apiKey: String
-  private let baseURL = URL(string: "https://api.lumalabs.ai")!
+  private let credential: ShipinCredential
+  private let transport: any ShipinTransport
+  private let baseURL: URL
+  private let requestTimeout: TimeInterval
 
-  private var generationTasks: [String: Task<Void, Error>] = [:]
-
-  /// Initializes a new instance of `LumaAIClient`
-  ///
-  /// - Parameters:
-  ///   - apiKey: Your Luma AI API key.
-  ///   - session: The URLSession to use for network requests. Defaults to `URLSession.shared`.
-  public init(apiKey: String) {
-    self.apiKey = apiKey
+  public init(
+    credential: ShipinCredential,
+    transport: any ShipinTransport = URLSessionShipinTransport(),
+    baseURL: URL = URL(string: "https://api.lumalabs.ai")!,
+    requestTimeout: TimeInterval = 60
+  ) {
+    self.credential = credential
+    self.transport = transport
+    self.baseURL = baseURL
+    self.requestTimeout = requestTimeout
   }
 
-  /// Initiates a generation request to the Luma AI API.
-  ///
-  /// - Parameters:
-  ///   - prompt: The prompt for the generation.
-  ///   - aspectRatio: The aspect ratio of the generated content. Defaults to "16:9".
-  ///   - loop: Whether the generated content should loop.
-  ///   - keyframes: A dictionary of keyframes.
-  ///   - callbackURL: The callback URL to receive generation updates.
-  ///
-  /// - Returns: A `GenerationResponse` containing the result of the generation.
-  public func createGeneration(prompt: String, aspectRatio: String = "16:9", loop: Bool, keyframes: [String: LumaAIKeyframeData], callbackURL: String? = nil) async throws -> LumaAIGenerationResponse {
-    let url = baseURL.appendingPathComponent("/dream-machine/v1/generations")
-    var request = URLRequest(url: url)
-    request.httpMethod = "POST"
-    request.timeoutInterval = 10
-    request.addValue("application/json", forHTTPHeaderField: "accept")
-    request.addValue("application/json", forHTTPHeaderField: "content-type")
-    request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "authorization")
-
-    let requestBody = LumaAIGenerationRequest(prompt: prompt, aspectRatio: aspectRatio, loop: loop, keyframes: keyframes, callbackURL: callbackURL)
-    let encoder = JSONEncoder()
-    encoder.keyEncodingStrategy = .convertToSnakeCase
-    let bodyData = try encoder.encode(requestBody)
-    request.httpBody = bodyData
-
-    print("Request Body: \(String(data: bodyData, encoding: .utf8) ?? "")")
-
-    let (data, response) = try await URLSession.shared.data(for: request)
-
-    if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
-        print("Error Response: \(String(data: data, encoding: .utf8) ?? "")")
-        throw LumaAIError.httpError(statusCode: httpResponse.statusCode)
-    }
-
-    let decoder = JSONDecoder()
-    decoder.keyDecodingStrategy = .convertFromSnakeCase
-    do {
-      let generationResponse = try decoder.decode(LumaAIGenerationResponse.self, from: data)
-      return generationResponse
-    } catch {
-      throw LumaAIError.decodingError(underlying: error)
-    }
+  /// Convenience initializer for an API key already loaded by the application.
+  public init(
+    apiKey: String,
+    transport: any ShipinTransport = URLSessionShipinTransport(),
+    baseURL: URL = URL(string: "https://api.lumalabs.ai")!,
+    requestTimeout: TimeInterval = 60
+  ) {
+    self.init(
+      credential: ShipinCredential(apiKey: apiKey),
+      transport: transport,
+      baseURL: baseURL,
+      requestTimeout: requestTimeout
+    )
   }
 
-  /// Retrieves a specific generation from the Luma AI API.
-  ///
-  /// - Parameter id: The unique identifier of the generation to retrieve.
-  ///
-  /// - Returns: A `LumaAIGenerationResponse` containing the details of the requested generation.
-  ///
-  /// - Throws: `LumaAIError.httpError` if the API request fails, or `LumaAIError.decodingError` if the response cannot be decoded.
-  public func getGeneration(id: String) async throws -> LumaAIGenerationResponse {
-    let url = baseURL.appendingPathComponent("/dream-machine/v1/generations/\(id)")
-    var request = URLRequest(url: url)
-    request.httpMethod = "GET"
-    request.addValue("application/json", forHTTPHeaderField: "accept")
-    request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "authorization")
-
-    let (data, response) = try await URLSession.shared.data(for: request)
-
-    if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
-      throw LumaAIError.httpError(statusCode: httpResponse.statusCode)
-    }
-
-    let decoder = JSONDecoder()
-    decoder.keyDecodingStrategy = .convertFromSnakeCase
-    do {
-      let generationResponse = try decoder.decode(LumaAIGenerationResponse.self, from: data)
-      return generationResponse
-    } catch {
-      throw LumaAIError.decodingError(underlying: error)
-    }
+  /// Starts a video generation using Luma's current `/generations/video` contract.
+  public func createGeneration(
+    _ generation: LumaAIGenerationRequest
+  ) async throws -> LumaAIGeneration {
+    var request = try await request(
+      path: "dream-machine/v1/generations/video",
+      method: "POST"
+    )
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.httpBody = try JSONEncoder().encode(generation)
+    let response = try await send(request)
+    return try decode(LumaAIGeneration.self, from: response.data)
   }
 
-  /// Lists all generations from the Luma AI API with pagination support.
-  ///
-  /// - Parameters:
-  ///   - limit: The maximum number of generations to return. Defaults to 10.
-  ///   - offset: The number of generations to skip before starting to return results. Defaults to 0.
-  ///
-  /// - Returns: An array of `LumaAIGenerationResponse` objects representing the list of generations.
-  ///
-  /// - Throws: `LumaAIError.httpError` if the API request fails, or `LumaAIError.decodingError` if the response cannot be decoded.
-  public func listGenerations(limit: Int = 10, offset: Int = 0) async throws -> LumaAIGenerationResponse {
-    debugPrint("Entering listGenerations with limit: \(limit), offset: \(offset)")
-    
-    var components = URLComponents(url: baseURL.appendingPathComponent("/dream-machine/v1/generations"), resolvingAgainstBaseURL: true)
+  /// Retrieves one generation by ID.
+  public func generation(id: String) async throws -> LumaAIGeneration {
+    try await generation(id: id, timeoutInterval: nil)
+  }
+
+  private func generation(
+    id: String,
+    timeoutInterval: TimeInterval?
+  ) async throws -> LumaAIGeneration {
+    try validatePathIdentifier(id, field: "id")
+    let request = try await request(
+      pathComponents: ["dream-machine", "v1", "generations", id],
+      method: "GET",
+      timeoutInterval: timeoutInterval
+    )
+    let response = try await send(request)
+    return try decode(LumaAIGeneration.self, from: response.data)
+  }
+
+  /// Lists generations using Luma's pagination envelope.
+  public func listGenerations(limit: Int = 100, offset: Int = 0) async throws -> LumaAIGenerationList {
+    guard limit > 0 else {
+      throw ShipinError.invalidRequest(field: "limit", reason: "Limit must be greater than zero.")
+    }
+    guard offset >= 0 else {
+      throw ShipinError.invalidRequest(field: "offset", reason: "Offset cannot be negative.")
+    }
+
+    var components = URLComponents(
+      url: baseURL.appendingPathComponent("dream-machine/v1/generations"),
+      resolvingAgainstBaseURL: false
+    )
     components?.queryItems = [
       URLQueryItem(name: "limit", value: String(limit)),
       URLQueryItem(name: "offset", value: String(offset))
     ]
-
     guard let url = components?.url else {
-      debugPrint("Error: Failed to construct URL")
-      throw URLError(.badURL)
-    }
-    debugPrint("Constructed URL: \(url)")
-
-    var request = URLRequest(url: url)
-    request.httpMethod = "GET"
-    request.addValue("application/json", forHTTPHeaderField: "accept")
-    request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "authorization")
-    debugPrint("Request headers: \(request.allHTTPHeaderFields ?? [:])")
-
-    debugPrint("Sending request...")
-    let (data, response) = try await URLSession.shared.data(for: request)
-    debugPrint("Received response")
-
-    if let httpResponse = response as? HTTPURLResponse {
-      debugPrint("HTTP Status Code: \(httpResponse.statusCode)")
-      if !(200...299).contains(httpResponse.statusCode) {
-        debugPrint("Error: HTTP request failed")
-        throw LumaAIError.httpError(statusCode: httpResponse.statusCode)
-      }
+      throw ShipinError.invalidRequest(field: "pagination", reason: "Could not construct the URL.")
     }
 
-    debugPrint("Response data size: \(data.count) bytes")
-    if let responseString = String(data: data, encoding: .utf8) {
-      debugPrint("Response body: \(responseString)")
-    }
-
-    let decoder = JSONDecoder()
-    decoder.keyDecodingStrategy = .convertFromSnakeCase
-    do {
-      debugPrint("Attempting to decode response...")
-      let generationResponses = try decoder.decode(LumaAIGenerationResponse.self, from: data)
-      debugPrint("Successfully decoded response")
-      debugPrint("Number of generations: \(generationResponses.generations?.count ?? 0)")
-      return generationResponses
-    } catch {
-      debugPrint("Error: Failed to decode response")
-      debugPrint("Decoding error: \(error)")
-      throw LumaAIError.decodingError(underlying: error)
-    }
+    let request = try await request(url: url, method: "GET")
+    let response = try await send(request)
+    return try decode(LumaAIGenerationList.self, from: response.data)
   }
 
-  /// Deletes a specific generation from the Luma AI API.
-  ///
-  /// - Parameter id: The unique identifier of the generation to delete.
-  ///
-  /// - Throws: `LumaAIError.httpError` if the API request fails.
+  /// Deletes a generation and its retained provider assets.
   public func deleteGeneration(id: String) async throws {
-    let url = baseURL.appendingPathComponent("/dream-machine/v1/generations/\(id)")
-    var request = URLRequest(url: url)
-    request.httpMethod = "DELETE"
-    request.addValue("application/json", forHTTPHeaderField: "accept")
-    request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "authorization")
-
-    let (_, response) = try await URLSession.shared.data(for: request)
-
-    if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
-      throw LumaAIError.httpError(statusCode: httpResponse.statusCode)
-    }
+    try validatePathIdentifier(id, field: "id")
+    let request = try await request(
+      pathComponents: ["dream-machine", "v1", "generations", id],
+      method: "DELETE"
+    )
+    _ = try await send(request)
   }
 
-  /// Retrieves a list of supported camera motions from the Luma AI API.
-  ///
-  /// This method fetches an array of strings representing various camera motion options
-  /// that can be used in video generation. These motions define how the virtual camera
-  /// moves during the generated video sequence.
-  ///
-  /// Possible camera motions include:
-  /// - Static: No camera movement
-  /// - Move Left/Right/Up/Down: Camera translates in the specified direction
-  /// - Push In/Pull Out: Camera moves forward or backward
-  /// - Zoom In/Out: Camera lens zooms in or out
-  /// - Pan Left/Right: Camera rotates horizontally
-  /// - Orbit Left/Right: Camera circles around the subject
-  /// - Crane Up/Down: Camera moves vertically, typically on a crane or jib
-  ///
-  /// - Returns: An array of strings representing supported camera motions.
-  ///
-  /// - Throws: `LumaAIError.httpError` if the API request fails, or
-  ///           `LumaAIError.decodingError` if the response cannot be decoded.
-  public func listCameraMotions() async throws -> [String] {
-    let url = baseURL.appendingPathComponent("/dream-machine/v1/generations/camera_motion/list")
-    var request = URLRequest(url: url)
-    request.httpMethod = "GET"
-    request.addValue("application/json", forHTTPHeaderField: "accept")
-    request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "authorization")
-
-    let (data, response) = try await URLSession.shared.data(for: request)
-
-    if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
-      throw LumaAIError.httpError(statusCode: httpResponse.statusCode)
-    }
-
-    let decoder = JSONDecoder()
-    do {
-      let cameraMotions = try decoder.decode([String].self, from: data)
-      return cameraMotions
-    } catch {
-      throw LumaAIError.decodingError(underlying: error)
-    }
+  /// Retrieves Luma's supported generation concepts.
+  public func listConcepts() async throws -> [String] {
+    let request = try await request(
+      path: "dream-machine/v1/generations/concepts/list",
+      method: "GET"
+    )
+    let response = try await send(request)
+    return try decode([String].self, from: response.data)
   }
 
-  public func createGenerationWithUpdates(prompt: String, aspectRatio: String = "16:9", loop: Bool, keyframes: [String: LumaAIKeyframeData]) async throws {
-    let initialResponse = try await createGeneration(prompt: prompt, aspectRatio: aspectRatio, loop: loop, keyframes: keyframes)
-    guard let generationID = initialResponse.generations?.first?.id else {
-      throw LumaAIError.invalidResponse
+  /// Starts a generation and waits for a terminal state.
+  public func generateVideo(
+    _ generation: LumaAIGenerationRequest,
+    pollInterval: Duration = .seconds(5),
+    timeout: Duration = .seconds(600)
+  ) async throws -> LumaAIGeneratedVideo {
+    let created = try await createGeneration(generation)
+    guard let id = created.id else {
+      throw ShipinError.missingResponseField(provider: .lumaAI, field: "id")
     }
+    return try await waitForGeneration(
+      id: id,
+      pollInterval: pollInterval,
+      timeout: timeout
+    )
+  }
 
-    let task = Task<Void, Error> {
-      var currentResponse = initialResponse
+  /// Waits for an existing Luma generation and returns its complete typed receipt.
+  public func waitForGeneration(
+    id: String,
+    pollInterval: Duration = .seconds(5),
+    timeout: Duration = .seconds(600)
+  ) async throws -> LumaAIGeneratedVideo {
+    try validatePolling(pollInterval: pollInterval, timeout: timeout)
+    let clock = ContinuousClock()
+    let deadline = clock.now.advanced(by: timeout)
 
-      while currentResponse.generations?.first?.state != "completed" && currentResponse.generations?.first?.state != "failed" {
-        try await Task.sleep(for: .seconds(5))
-        currentResponse = try await self.checkGenerationStatus(id: currentResponse.generations?.first?.id ?? "")
+    while true {
+      try Task.checkCancellation()
+      let now = clock.now
+      guard now < deadline else {
+        throw ShipinError.generationTimedOut(provider: .lumaAI)
+      }
+      let remaining = now.duration(to: deadline)
+      let response = try await generation(
+        id: id,
+        timeoutInterval: min(requestTimeout, remaining.timeInterval)
+      )
+      guard clock.now <= deadline else {
+        throw ShipinError.generationTimedOut(provider: .lumaAI)
+      }
+      guard let state = response.state else {
+        throw ShipinError.missingResponseField(provider: .lumaAI, field: "state")
+      }
+      switch state {
+        case .completed:
+          guard let videoURL = response.assets?.video else {
+            throw ShipinError.missingOutput(provider: .lumaAI)
+          }
+          return LumaAIGeneratedVideo(generation: response, videoURL: videoURL)
+        case .failed:
+          throw ShipinError.generationFailed(
+            provider: .lumaAI,
+            code: nil,
+            message: response.failureReason ?? "The provider did not include a failure reason."
+          )
+        case .queued, .dreaming, .unknown:
+          let now = clock.now
+          guard now < deadline else {
+            throw ShipinError.generationTimedOut(provider: .lumaAI)
+          }
+          let remaining = now.duration(to: deadline)
+          try await Task.sleep(for: min(pollInterval, remaining))
       }
     }
+  }
 
-    self.generationTasks[generationID] = task
+  private func request(path: String, method: String) async throws -> URLRequest {
+    try await request(pathComponents: [path], method: method, timeoutInterval: nil)
+  }
 
+  private func request(
+    pathComponents: [String],
+    method: String,
+    timeoutInterval: TimeInterval? = nil
+  ) async throws -> URLRequest {
+    let url = pathComponents.reduce(baseURL) { url, component in
+      url.appendingPathComponent(component)
+    }
+    return try await request(url: url, method: method, timeoutInterval: timeoutInterval)
+  }
+
+  private func request(
+    url: URL,
+    method: String,
+    timeoutInterval: TimeInterval? = nil
+  ) async throws -> URLRequest {
+    let timeoutInterval = timeoutInterval ?? requestTimeout
+    guard timeoutInterval > 0 else {
+      throw ShipinError.invalidRequest(
+        field: "requestTimeout",
+        reason: "The request timeout must be greater than zero."
+      )
+    }
+    var request = URLRequest(url: url, timeoutInterval: timeoutInterval)
+    request.httpMethod = method
+    request.setValue(
+      try await credential.authorizationHeaderValue(),
+      forHTTPHeaderField: "Authorization"
+    )
+    request.setValue("application/json", forHTTPHeaderField: "Accept")
+    return request
+  }
+
+  private func send(_ request: URLRequest) async throws -> ShipinHTTPResponse {
+    let response: ShipinHTTPResponse
     do {
-      try await task.value
-    } catch {
-      self.generationTasks.removeValue(forKey: generationID)
+      response = try await transport.send(request)
+    } catch is CancellationError {
+      throw CancellationError()
+    } catch let error as URLError where error.code == .cancelled && Task.isCancelled {
+      throw CancellationError()
+    } catch let error as ShipinError {
       throw error
+    } catch {
+      throw ShipinError.transportFailure(String(describing: error))
     }
 
-    self.generationTasks.removeValue(forKey: generationID)
-  }
-
-  private func checkGenerationStatus(id: String) async throws -> LumaAIGenerationResponse {
-    let url = baseURL.appendingPathComponent("/dream-machine/v1/generations/\(id)")
-    var request = URLRequest(url: url)
-    request.httpMethod = "GET"
-    request.addValue("application/json", forHTTPHeaderField: "accept")
-    request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "authorization")
-
-    let (data, response) = try await URLSession.shared.data(for: request)
-
-    guard let httpResponse = response as? HTTPURLResponse, 200...299 ~= httpResponse.statusCode else {
-      throw LumaAIError.invalidResponse
+    guard (200...299).contains(response.statusCode) else {
+      throw ShipinError.api(
+        provider: .lumaAI,
+        statusCode: response.statusCode,
+        message: decodeAPIErrorMessage(from: response.data),
+        retryable: response.statusCode == 429 || (500...599).contains(response.statusCode)
+      )
     }
-
-    let decoder = JSONDecoder()
-    decoder.keyDecodingStrategy = .convertFromSnakeCase
-    return try decoder.decode(LumaAIGenerationResponse.self, from: data)
+    return response
   }
 
-  public func cancelGenerationUpdates(id: String) {
-    generationTasks[id]?.cancel()
-    generationTasks.removeValue(forKey: id)
+  private func decode<Value: Decodable>(
+    _ type: Value.Type,
+    from data: Data
+  ) throws -> Value {
+    do {
+      return try JSONDecoder().decode(type, from: data)
+    } catch {
+      throw ShipinError.responseDecodingFailed(
+        provider: .lumaAI,
+        reason: String(describing: error)
+      )
+    }
+  }
+
+  private func validatePolling(pollInterval: Duration, timeout: Duration) throws {
+    guard pollInterval >= .zero else {
+      throw ShipinError.invalidRequest(
+        field: "pollInterval",
+        reason: "The polling interval cannot be negative."
+      )
+    }
+    guard timeout > .zero else {
+      throw ShipinError.invalidRequest(
+        field: "timeout",
+        reason: "The polling timeout must be greater than zero."
+      )
+    }
+  }
+}
+
+private extension Duration {
+  var timeInterval: TimeInterval {
+    let components = self.components
+    return TimeInterval(components.seconds)
+      + TimeInterval(components.attoseconds) / 1_000_000_000_000_000_000
   }
 }

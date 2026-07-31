@@ -101,7 +101,7 @@
 			mainGroup = 0AC98B772CB3B21700C9CA79;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				0A48ABAF2CBC1098001B5134 /* XCRemoteSwiftPackageReference "ShipinKit" */,
+				0A48ABAF2CBC1098001B5134 /* XCLocalSwiftPackageReference "ShipinKit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 0AC98B812CB3B21700C9CA79 /* Products */;
@@ -340,21 +340,17 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		0A48ABAF2CBC1098001B5134 /* XCRemoteSwiftPackageReference "ShipinKit" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/rryam/ShipinKit";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
+/* Begin XCLocalSwiftPackageReference section */
+		0A48ABAF2CBC1098001B5134 /* XCLocalSwiftPackageReference "ShipinKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ..;
 		};
-/* End XCRemoteSwiftPackageReference section */
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		0A48ABB02CBC1098001B5134 /* ShipinKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 0A48ABAF2CBC1098001B5134 /* XCRemoteSwiftPackageReference "ShipinKit" */;
+			package = 0A48ABAF2CBC1098001B5134 /* XCLocalSwiftPackageReference "ShipinKit" */;
 			productName = ShipinKit;
 		};
 /* End XCSwiftPackageProductDependency section */

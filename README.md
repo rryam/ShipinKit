@@ -1,137 +1,179 @@
-# ShipinKit: Swift SDK for Prototyping AI Video Generation
+# ShipinKit
 
-ShipinKit is an unofficial Swift SDK designed for quick prototyping and easy integration with video generation capabilities. The name is based on the Chinese word for video, which is 视频.
+ShipinKit is an unofficial Swift SDK for prototyping typed video-generation flows with the Runway and Luma APIs.
 
-<a href="https://www.emergetools.com/app/example/ios/runveykit.RunveyKit/manual?utm_campaign=badge-data"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fwww.emergetools.com%2Fapi%2Fv2%2Fpublic_new_build%3FexampleId%3Drunveykit.RunveyKit%26platform%3Dios%26badgeOption%3Dversion_and_max_install_size%26buildType%3Dmanual&query=$.badgeMetadata&label=RunveyKit&logo=apple" /></a>
+## What 2.0 provides
 
-## Features
+- Typed, provider-specific requests and responses; no public `Any` return values
+- A lazily resolved, always-redacted `ShipinCredential`
+- An injectable `ShipinTransport` for deterministic tests and app-owned networking
+- Runway API version `2024-11-06` with Gen-4.5 and Gen-4 Turbo contracts
+- Luma Ray 2 and Ray 2 Flash video-generation contracts
+- Structured task states, failure receipts, polling timeouts, and cancellation handling
+- Finite per-request timeouts and path-safe provider identifiers
+- Offline fixture tests that never require or call a live provider account
 
-- Generate videos using text prompts and input images
-- Customizable generation parameters (duration, aspect ratio, watermark, seed)
-- Swift async/await support
-- Error handling for common API issues
-- Retrieve task details and process them into a human-readable description
-- Cancel or delete a task
+ShipinKit never logs credentials, authorization headers, prompt bodies, or provider responses.
 
 ## Requirements
 
 - Swift 6.0+
-- iOS 16.0+, macOS 14.0+, tvOS 16.0+, watchOS 9.0+, visionOS 1.0+
+- iOS 16+, macOS 14+, tvOS 16+, watchOS 9+, or visionOS 1+
 
 ## Installation
 
-Add ShipinKit to your Swift package dependencies:
-
 ```swift
 dependencies: [
-    .package(url: "https://github.com/rryam/ShipinKit.git", from: "1.0.0")
+  .package(url: "https://github.com/rryam/ShipinKit.git", from: "2.0.0")
 ]
 ```
 
-## Important Note
+Then add `ShipinKit` to your target dependencies.
 
-This library is intended for quick prototyping and development purposes only. For production use, it is highly recommended to implement a more secure and controlled approach to managing API keys, such as using environment variables or a secure key management service.
+## Credential safety
 
-## Usage
-
-Here are examples of how to use ShipinKit to generate videos:
+Do not commit API keys or put them in a shared Xcode scheme. Resolve them from an app-owned secrets service instead:
 
 ```swift
-// Generate video from image data
-let runvey = ShipinKit(apiKey: "your-api-key")
-let image = UIImage(named: "input-image.jpg")!
-do {
-    let videoURL = try await runvey.generateVideo(
-        prompt: "A serene lake with mountains in the background",
-        image: image,
-        duration: .medium,
-        aspectRatio: .widescreen
-    )
-    print("Video generated successfully: \(videoURL)")
-} catch {
-    print("Error generating video: \(error)")
-}
-
-// Generate video from image URL
-let runvey = ShipinKit(apiKey: "your-api-key")
-let imageURL = URL(string: "https://example.com/input-image.jpg")!
-do {
-    let videoURL = try await runvey.generateVideo(
-        prompt: "A bustling cityscape transforming through seasons",
-        imageURL: imageURL,
-        duration: .long,
-        aspectRatio: .portrait,
-        watermark: true
-    )
-    print("Video generated successfully: \(videoURL)")
-} catch {
-    print("Error generating video: \(error)")
+let credential = ShipinCredential {
+  try await secrets.runwayAPIKey()
 }
 ```
 
-Here is a basic example of how to use ShipinKit to generate a task if you prefer manual control:
+The closure is called at request time, so an application can rotate a credential without recreating its client. `String(describing:)` and `String(reflecting:)` always produce `<redacted>`.
+
+An API key embedded in a distributed client app cannot be kept fully secret. For production apps, keep provider credentials on a server you control and expose a narrow authenticated endpoint to the app. Direct provider access is best limited to local tools and prototypes.
+
+## Runway
+
+Create a typed request, start it, and wait for the complete task receipt:
 
 ```swift
 import ShipinKit
 
-do {
-    let prompt = "Dynamic tracking shot: The camera glides through the iconic Shibuya Crossing in Tokyo at night, capturing the bustling intersection bathed in vibrant neon lights. Countless pedestrians cross the wide intersection as towering digital billboards illuminate the scene with colorful advertisements. The wet pavement reflects the dazzling lights, creating a cinematic urban atmosphere."
-    let imageURL = URL(string: "https://images.unsplash.com/photo-1542051841857-5f90071e7989?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")!
+let image = try RunwayMLImageSource(
+  url: URL(string: "https://example.com/input.jpg")!
+)
+let request = try RunwayMLImageToVideoRequest(
+  model: .gen4Turbo,
+  promptImage: image,
+  promptText: "A slow camera push through morning fog",
+  duration: .fiveSeconds,
+  ratio: .landscape
+)
 
-    let shipinKit = ShipinKit(apiKey: "YOUR_API_KEY_HERE")
-    let taskID = try await shipinKit.generateTask(
-        prompt: prompt,
-        imageURL: imageURL,
-        duration: .long, // 10 seconds
-        aspectRatio: .widescreen, // 16:9 ratio
-    )
+let runway = RunwayML(credential: credential)
+let result = try await runway.generateVideo(request)
 
-    print("Image generation task started with ID: \(taskID)")
-} catch {
-    print("Error generating image: \(error)")
+switch result.task.state {
+  case .succeeded(let output):
+    // Store provider output promptly; provider URLs are temporary.
+    use(output)
+  default:
+    break
 }
 ```
 
-Here's an example of how to retrieve task details and process them into a human-readable description:
+For manual task control:
+
+```swift
+let created = try await runway.createImageToVideoTask(request)
+let latest = try await runway.task(id: created.id)
+try await runway.cancelOrDeleteTask(id: created.id)
+```
+
+The request type deliberately supports the shared Gen-4.5 and Gen-4 Turbo image-to-video fields. Other Runway models have different parameter contracts and are not represented as if they were interchangeable.
+
+## Luma
 
 ```swift
 import ShipinKit
 
-    do {
-        let shipinKit = ShipinKit(apiKey: "YOUR_API_KEY_HERE")
-        let taskId = "17f20503-6c24-4c16-946b-35dbbce2af2f"
-        let taskDetails = try await shipinKit.getTaskDetails(id: taskId)
-        print(taskDetails)
-    } catch {
-        print("Error: \(error)")
-    }
+let credential = ShipinCredential {
+  try await secrets.lumaAPIKey()
+}
+let request = try LumaAIGenerationRequest(
+  prompt: "A paper boat moving across a calm pond",
+  model: .ray2,
+  resolution: .p720,
+  duration: .fiveSeconds,
+  aspectRatio: .landscape
+)
+
+let luma = LumaAI(credential: credential)
+let result = try await luma.generateVideo(request)
+use(result.videoURL)
 ```
 
-And here's an example of how to cancel or delete a task:
+Image-to-video uses typed keyframes:
 
 ```swift
-import ShipinKit
-
-    do {
-        let shipinKit = ShipinKit(apiKey: "YOUR_API_KEY_HERE")
-        let taskId = "17f20503-6c24-4c16-946b-35dbbce2af2f"
-        try await shipinKit.cancelOrDeleteTask(id: taskId)
-        print("Task \(taskId) has been successfully canceled or deleted.")
-    } catch {
-        print("Error canceling or deleting task: \(error)")
-    }
+let keyframes = try LumaAIKeyframes(
+  frame0: .image(URL(string: "https://example.com/start.jpg")!)
+)
+let request = try LumaAIGenerationRequest(
+  prompt: "A tiger walks forward through falling snow",
+  keyframes: keyframes
+)
 ```
+
+Current Luma camera concepts are typed in requests and discoverable from the provider:
+
+```swift
+let concept = try LumaAIConcept(key: "dolly_zoom")
+let request = try LumaAIGenerationRequest(
+  prompt: "A car on a mountain road",
+  concepts: [concept]
+)
+let availableConcepts = try await luma.listConcepts()
+```
+
+Known resolution and duration cases have named values. Their `.custom(...)` cases preserve newer provider values without requiring a ShipinKit release first.
+
+## Runtime provider selection
+
+If the application chooses a provider dynamically, `ShipinClient` returns a typed enum:
+
+```swift
+let client = ShipinClient(
+  service: .runwayML(credential: credential)
+)
+
+switch try await client.generate(.runwayML(request)) {
+  case .runwayML(let task):
+    use(task.id)
+  case .lumaAI:
+    break
+}
+```
+
+## Injectable transport
+
+All clients accept any `ShipinTransport`. Tests can return fixture data and inspect the generated `URLRequest` without making a network call:
+
+```swift
+struct FixtureTransport: ShipinTransport {
+  let response: ShipinHTTPResponse
+
+  func send(_ request: URLRequest) async throws -> ShipinHTTPResponse {
+    response
+  }
+}
+```
+
+Each client also accepts a `requestTimeout` (60 seconds by default). Polling has a separate overall `timeout`, so one stalled request and one long-running generation have independent limits.
+
+## Migrating to 2.0
+
+- Import and link the `ShipinKit` product. The published `1.0.0` product was named `RunveyKit`.
+- Replace the old multi-parameter `generate(...) -> Any` call with a `LumaAIGenerationRequest` or `RunwayMLImageToVideoRequest`.
+- Replace `gen3a_turbo`, `16:9`/`9:16` Runway values, and the old version header with the typed current model, resolution, and duration values.
+- Remove the obsolete Runway `watermark` parameter; it is not part of the current image-to-video contract.
+- Handle `ShipinError` for validation, transport, HTTP, terminal generation, and timeout failures.
+- Replace live placeholder tests with an injected `ShipinTransport` and fixture responses.
+
+Provider contracts are based on the official [Runway API reference](https://docs.dev.runwayml.com/api/), [Runway model catalog](https://docs.dev.runwayml.com/guides/models/), and [Luma video-generation documentation](https://docs.lumalabs.ai/docs/video-generation).
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Disclaimer
-
-This is an unofficial library and is not affiliated with or endorsed by RunwayML, Luma Labs or Kling AI.
-
-[![Star History Chart](https://api.star-history.com/svg?repos=rryam/ShipinKit&type=Date)](https://star-history.com/#rryam/ShipinKit&Date)
+ShipinKit is available under the MIT license. It is not affiliated with or endorsed by Runway or Luma AI.
