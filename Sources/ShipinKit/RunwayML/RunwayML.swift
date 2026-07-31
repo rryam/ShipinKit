@@ -58,8 +58,19 @@ public actor RunwayML {
 
   /// Gets the latest typed state for a task.
   public func task(id: String) async throws -> RunwayMLTaskResponse {
+    try await task(id: id, timeoutInterval: nil)
+  }
+
+  private func task(
+    id: String,
+    timeoutInterval: TimeInterval?
+  ) async throws -> RunwayMLTaskResponse {
     try validatePathIdentifier(id, field: "id")
-    let request = try await request(pathComponents: ["tasks", id], method: "GET")
+    let request = try await request(
+      pathComponents: ["tasks", id],
+      method: "GET",
+      timeoutInterval: timeoutInterval
+    )
     let response = try await send(request)
     return try decode(RunwayMLTaskResponse.self, from: response.data)
   }
@@ -97,7 +108,18 @@ public actor RunwayML {
 
     while true {
       try Task.checkCancellation()
-      let response = try await task(id: id)
+      let now = clock.now
+      guard now < deadline else {
+        throw ShipinError.generationTimedOut(provider: .runwayML)
+      }
+      let remaining = now.duration(to: deadline)
+      let response = try await task(
+        id: id,
+        timeoutInterval: min(requestTimeout, remaining.timeInterval)
+      )
+      guard clock.now <= deadline else {
+        throw ShipinError.generationTimedOut(provider: .runwayML)
+      }
       switch response.state {
         case .succeeded(let output):
           guard !output.isEmpty else {
@@ -108,15 +130,17 @@ public actor RunwayML {
           throw ShipinError.generationFailed(
             provider: .runwayML,
             code: code,
-            message: message
+            message: message ?? "The provider did not include a failure reason."
           )
         case .cancelled:
           throw ShipinError.generationCancelled(provider: .runwayML)
         case .pending, .throttled, .running:
-          guard clock.now < deadline else {
+          let now = clock.now
+          guard now < deadline else {
             throw ShipinError.generationTimedOut(provider: .runwayML)
           }
-          try await Task.sleep(for: pollInterval)
+          let remaining = now.duration(to: deadline)
+          try await Task.sleep(for: min(pollInterval, remaining))
       }
     }
   }
@@ -149,11 +173,16 @@ public actor RunwayML {
   }
 
   private func request(path: String, method: String) async throws -> URLRequest {
-    try await request(pathComponents: [path], method: method)
+    try await request(pathComponents: [path], method: method, timeoutInterval: nil)
   }
 
-  private func request(pathComponents: [String], method: String) async throws -> URLRequest {
-    guard requestTimeout > 0 else {
+  private func request(
+    pathComponents: [String],
+    method: String,
+    timeoutInterval: TimeInterval? = nil
+  ) async throws -> URLRequest {
+    let timeoutInterval = timeoutInterval ?? requestTimeout
+    guard timeoutInterval > 0 else {
       throw ShipinError.invalidRequest(
         field: "requestTimeout",
         reason: "The request timeout must be greater than zero."
@@ -162,7 +191,7 @@ public actor RunwayML {
     let url = pathComponents.reduce(baseURL) { url, component in
       url.appendingPathComponent(component)
     }
-    var request = URLRequest(url: url, timeoutInterval: requestTimeout)
+    var request = URLRequest(url: url, timeoutInterval: timeoutInterval)
     request.httpMethod = method
     request.setValue(
       try await credential.authorizationHeaderValue(),
@@ -221,5 +250,13 @@ public actor RunwayML {
         reason: "The polling timeout must be greater than zero."
       )
     }
+  }
+}
+
+private extension Duration {
+  var timeInterval: TimeInterval {
+    let components = self.components
+    return TimeInterval(components.seconds)
+      + TimeInterval(components.attoseconds) / 1_000_000_000_000_000_000
   }
 }

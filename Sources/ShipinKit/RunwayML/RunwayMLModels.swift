@@ -177,8 +177,8 @@ public struct RunwayMLTaskResponse: Codable, Sendable, Equatable {
     case pending
     case throttled
     case cancelled
-    case running(progress: Double)
-    case failed(message: String, code: String?)
+    case running(progress: Double?)
+    case failed(message: String?, code: String?)
     case succeeded(output: [URL])
   }
 
@@ -227,10 +227,10 @@ public struct RunwayMLTaskResponse: Codable, Sendable, Equatable {
       case .cancelled:
         state = .cancelled
       case .running:
-        state = .running(progress: try container.decode(Double.self, forKey: .progress))
+        state = .running(progress: try container.decodeIfPresent(Double.self, forKey: .progress))
       case .failed:
         state = .failed(
-          message: try container.decode(String.self, forKey: .failure),
+          message: try container.decodeIfPresent(String.self, forKey: .failure),
           code: try container.decodeIfPresent(String.self, forKey: .failureCode)
         )
       case .succeeded:

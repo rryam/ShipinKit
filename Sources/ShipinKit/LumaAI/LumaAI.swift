@@ -50,10 +50,18 @@ public actor LumaAI {
 
   /// Retrieves one generation by ID.
   public func generation(id: String) async throws -> LumaAIGeneration {
+    try await generation(id: id, timeoutInterval: nil)
+  }
+
+  private func generation(
+    id: String,
+    timeoutInterval: TimeInterval?
+  ) async throws -> LumaAIGeneration {
     try validatePathIdentifier(id, field: "id")
     let request = try await request(
       pathComponents: ["dream-machine", "v1", "generations", id],
-      method: "GET"
+      method: "GET",
+      timeoutInterval: timeoutInterval
     )
     let response = try await send(request)
     return try decode(LumaAIGeneration.self, from: response.data)
@@ -134,7 +142,18 @@ public actor LumaAI {
 
     while true {
       try Task.checkCancellation()
-      let response = try await generation(id: id)
+      let now = clock.now
+      guard now < deadline else {
+        throw ShipinError.generationTimedOut(provider: .lumaAI)
+      }
+      let remaining = now.duration(to: deadline)
+      let response = try await generation(
+        id: id,
+        timeoutInterval: min(requestTimeout, remaining.timeInterval)
+      )
+      guard clock.now <= deadline else {
+        throw ShipinError.generationTimedOut(provider: .lumaAI)
+      }
       guard let state = response.state else {
         throw ShipinError.missingResponseField(provider: .lumaAI, field: "state")
       }
@@ -151,33 +170,44 @@ public actor LumaAI {
             message: response.failureReason ?? "The provider did not include a failure reason."
           )
         case .queued, .dreaming, .unknown:
-          guard clock.now < deadline else {
+          let now = clock.now
+          guard now < deadline else {
             throw ShipinError.generationTimedOut(provider: .lumaAI)
           }
-          try await Task.sleep(for: pollInterval)
+          let remaining = now.duration(to: deadline)
+          try await Task.sleep(for: min(pollInterval, remaining))
       }
     }
   }
 
   private func request(path: String, method: String) async throws -> URLRequest {
-    try await request(pathComponents: [path], method: method)
+    try await request(pathComponents: [path], method: method, timeoutInterval: nil)
   }
 
-  private func request(pathComponents: [String], method: String) async throws -> URLRequest {
+  private func request(
+    pathComponents: [String],
+    method: String,
+    timeoutInterval: TimeInterval? = nil
+  ) async throws -> URLRequest {
     let url = pathComponents.reduce(baseURL) { url, component in
       url.appendingPathComponent(component)
     }
-    return try await request(url: url, method: method)
+    return try await request(url: url, method: method, timeoutInterval: timeoutInterval)
   }
 
-  private func request(url: URL, method: String) async throws -> URLRequest {
-    guard requestTimeout > 0 else {
+  private func request(
+    url: URL,
+    method: String,
+    timeoutInterval: TimeInterval? = nil
+  ) async throws -> URLRequest {
+    let timeoutInterval = timeoutInterval ?? requestTimeout
+    guard timeoutInterval > 0 else {
       throw ShipinError.invalidRequest(
         field: "requestTimeout",
         reason: "The request timeout must be greater than zero."
       )
     }
-    var request = URLRequest(url: url, timeoutInterval: requestTimeout)
+    var request = URLRequest(url: url, timeoutInterval: timeoutInterval)
     request.httpMethod = method
     request.setValue(
       try await credential.authorizationHeaderValue(),
@@ -235,5 +265,13 @@ public actor LumaAI {
         reason: "The polling timeout must be greater than zero."
       )
     }
+  }
+}
+
+private extension Duration {
+  var timeInterval: TimeInterval {
+    let components = self.components
+    return TimeInterval(components.seconds)
+      + TimeInterval(components.attoseconds) / 1_000_000_000_000_000_000
   }
 }

@@ -172,4 +172,22 @@ final class LumaAITests: XCTestCase {
       )
     }
   }
+
+  func testPollingRequestTimeoutIsBoundedByRemainingOverallTimeout() async throws {
+    let transport = RecordingTransport(responses: [
+      fixture(#"{"id":"generation-1","state":"completed","assets":{"video":"https://example.com/video.mp4"}}"#)
+    ])
+    let client = LumaAI(
+      apiKey: "luma-test-secret",
+      transport: transport,
+      requestTimeout: 60
+    )
+
+    _ = try await client.waitForGeneration(id: "generation-1", timeout: .seconds(2))
+
+    let requests = await transport.requests()
+    let timeoutInterval = try XCTUnwrap(requests.first?.timeoutInterval)
+    XCTAssertGreaterThan(timeoutInterval, 0)
+    XCTAssertLessThanOrEqual(timeoutInterval, 2)
+  }
 }

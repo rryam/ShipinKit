@@ -42,6 +42,12 @@ final class RunwayMLTests: XCTestCase {
     )
     XCTAssertEqual(running.state, .running(progress: 0.5))
 
+    let runningWithoutProgress = try decoder.decode(
+      RunwayMLTaskResponse.self,
+      from: Data(#"{"id":"task-1","createdAt":"2026-07-31T08:12:00Z","status":"RUNNING"}"#.utf8)
+    )
+    XCTAssertEqual(runningWithoutProgress.state, .running(progress: nil))
+
     let cancelled = try decoder.decode(
       RunwayMLTaskResponse.self,
       from: Data(#"{"id":"task-2","createdAt":"2026-07-31T08:12:00Z","status":"CANCELLED"}"#.utf8)
@@ -53,6 +59,12 @@ final class RunwayMLTests: XCTestCase {
       from: Data(#"{"id":"task-3","createdAt":"2026-07-31T08:12:00Z","status":"FAILED","failure":"Input rejected","failureCode":"SAFETY.INPUT.TEXT"}"#.utf8)
     )
     XCTAssertEqual(failed.state, .failed(message: "Input rejected", code: "SAFETY.INPUT.TEXT"))
+
+    let failedWithoutMessage = try decoder.decode(
+      RunwayMLTaskResponse.self,
+      from: Data(#"{"id":"task-4","createdAt":"2026-07-31T08:12:00Z","status":"FAILED","failure":null,"failureCode":"INTERNAL"}"#.utf8)
+    )
+    XCTAssertEqual(failedWithoutMessage.state, .failed(message: nil, code: "INTERNAL"))
   }
 
   func testGeneratePollsFixtureResponsesWithoutLiveNetwork() async throws {
@@ -162,5 +174,44 @@ final class RunwayMLTests: XCTestCase {
     }
     let requests = await transport.requests()
     XCTAssertTrue(requests.isEmpty)
+  }
+
+  func testPollingRequestTimeoutIsBoundedByRemainingOverallTimeout() async throws {
+    let transport = RecordingTransport(responses: [
+      fixture(#"{"id":"task-1","createdAt":"2026-07-31T08:12:00Z","status":"SUCCEEDED","output":["https://example.com/video.mp4"]}"#)
+    ])
+    let client = RunwayML(
+      apiKey: "test-secret",
+      transport: transport,
+      requestTimeout: 60
+    )
+
+    _ = try await client.waitForTask(id: "task-1", timeout: .seconds(2))
+
+    let requests = await transport.requests()
+    let timeoutInterval = try XCTUnwrap(requests.first?.timeoutInterval)
+    XCTAssertGreaterThan(timeoutInterval, 0)
+    XCTAssertLessThanOrEqual(timeoutInterval, 2)
+  }
+
+  func testFailureWithoutMessageProducesTypedGenerationFailure() async throws {
+    let transport = RecordingTransport(responses: [
+      fixture(#"{"id":"task-1","createdAt":"2026-07-31T08:12:00Z","status":"FAILED","failure":null,"failureCode":"INTERNAL"}"#)
+    ])
+    let client = RunwayML(apiKey: "test-secret", transport: transport)
+
+    do {
+      _ = try await client.waitForTask(id: "task-1", timeout: .seconds(1))
+      XCTFail("Expected a generation failure")
+    } catch {
+      XCTAssertEqual(
+        error as? ShipinError,
+        .generationFailed(
+          provider: .runwayML,
+          code: "INTERNAL",
+          message: "The provider did not include a failure reason."
+        )
+      )
+    }
   }
 }
